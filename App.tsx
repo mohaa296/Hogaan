@@ -15,6 +15,7 @@ import LanguageManager from './components/LanguageManager';
 import StudentChat from './components/StudentChat';
 import { useLanguage } from './LanguageContext';
 import Navbar from './components/Navbar';
+import StudentLogin from './components/StudentLogin';
 
 const App: React.FC = () => {
   const { language, t } = useLanguage();
@@ -27,6 +28,7 @@ const App: React.FC = () => {
 
   const [toasts, setToasts] = useState<AppNotification[]>([]);
   const [activeStudent, setActiveStudent] = useState<Student | null>(null);
+  const [lastRegisteredStudent, setLastRegisteredStudent] = useState<Student | null>(null);
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginError, setLoginError] = useState('');
 
@@ -185,7 +187,8 @@ const App: React.FC = () => {
 
   const addStudent = (newStudent: Student) => {
     const isPublicMode = state.view === 'public-register';
-    const studentWithStatus = { ...newStudent, status: StudentStatus.PENDING };
+    const initialStatus = isPublicMode ? StudentStatus.APPROVED : StudentStatus.PENDING;
+    const studentWithStatus = { ...newStudent, status: initialStatus };
     
     fetch("/api/students", {
       method: "POST",
@@ -194,6 +197,9 @@ const App: React.FC = () => {
     })
     .then(res => res.json())
     .then(realStudent => {
+      if (isPublicMode) {
+        setLastRegisteredStudent(realStudent);
+      }
       setState(prev => ({
         ...prev,
         students: [...prev.students, realStudent],
@@ -202,6 +208,9 @@ const App: React.FC = () => {
     })
     .catch(err => {
       console.error("Error saving student to api:", err);
+      if (isPublicMode) {
+        setLastRegisteredStudent(studentWithStatus);
+      }
       setState(prev => ({
         ...prev,
         students: [...prev.students, studentWithStatus],
@@ -359,54 +368,17 @@ const App: React.FC = () => {
         return <LandingPage onSelectView={setView} courses={state.courses} />;
       case 'student-login':
         return (
-          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative">
-            <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 space-y-8 relative animate-in zoom-in duration-300">
-              {/* Absolutly Positioned Back Icon */}
-              <button 
-                onClick={() => setView('landing')} 
-                className="absolute top-6 left-6 w-9 h-9 text-slate-400 hover:text-[#B932B8] hover:bg-slate-50 rounded-full flex items-center justify-center transition-all active:scale-90"
-                title={t('back_home')}
-              >
-                <i className="fas fa-arrow-left text-base"></i>
-              </button>
-
-              <div className="text-center space-y-2 pt-4">
-                <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center text-[#B932B8] mx-auto mb-4 animate-bounce">
-                  <i className="fas fa-user-lock text-2xl"></i>
-                </div>
-                <h2 className="text-2xl font-black text-slate-900">{t('student_auth')}</h2>
-                <p className="text-slate-500 text-sm">{t('student_auth_desc')}</p>
-              </div>
-
-              <form onSubmit={handleStudentLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('email_phone')}</label>
-                  <input
-                    required
-                    type="text"
-                    value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="student@example.com"
-                    className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all font-medium text-slate-900"
-                  />
-                </div>
-                {loginError && (
-                  <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-xs font-bold flex items-start space-x-2">
-                    <i className="fas fa-exclamation-circle mt-0.5"></i>
-                    <span>{loginError}</span>
-                  </div>
-                )}
-                <button type="submit" className="w-full py-4 rounded-xl bg-[#B932B8] text-white font-black uppercase tracking-widest text-sm hover:bg-[#a120a0] shadow-lg shadow-purple-600/20 transition-all active:scale-95 duration-150">
-                  {t('gali_koorsooyinka')}
-                </button>
-              </form>
-
-              <button onClick={() => setView('landing')} className="w-full text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-[#B932B8] transition-colors flex items-center justify-center space-x-2 active:scale-95">
-                <i className="fas fa-long-arrow-alt-left text-sm"></i>
-                <span>{t('back_home')}</span>
-              </button>
-            </div>
-          </div>
+          <StudentLogin
+            students={state.students}
+            onLoginSuccess={(student) => {
+              setActiveStudent(student);
+              setState(prev => ({ ...prev, view: 'courses' }));
+            }}
+            onAdminLoginSuccess={() => {
+              setState(prev => ({ ...prev, view: 'dashboard' }));
+            }}
+            onCancel={() => setView('landing')}
+          />
         );
       case 'courses':
         return activeStudent ? <Courses student={activeStudent} courses={state.courses} onBack={() => setView('landing')} /> : <LandingPage onSelectView={setView} courses={state.courses} />;
@@ -424,7 +396,16 @@ const App: React.FC = () => {
           </div>
         );
       case 'public-success':
-        return <PublicSuccess onBackHome={() => setView('landing')} />;
+        return (
+          <PublicSuccess 
+            student={lastRegisteredStudent}
+            onBackHome={() => setView('landing')} 
+            onAutoLogin={(student) => {
+              setActiveStudent(student);
+              setState(prev => ({ ...prev, view: 'courses' }));
+            }}
+          />
+        );
       case 'dashboard':
         return <Dashboard students={state.students} notifications={state.notifications} />;
       case 'register':
@@ -486,6 +467,11 @@ const App: React.FC = () => {
                 element.scrollIntoView({ behavior: 'smooth' });
               }
             }
+          }}
+          activeStudent={activeStudent}
+          onLogout={() => {
+            setActiveStudent(null);
+            setView('landing');
           }}
         />
         <div className="flex-grow">

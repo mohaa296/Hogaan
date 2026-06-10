@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage, LanguageType } from '../LanguageContext';
+import { Student } from '../types';
 
 interface NavbarProps {
   currentView: string;
-  onSelectView: (view: 'landing' | 'public-register' | 'student-login' | 'dashboard') => void;
+  onSelectView: (view: 'landing' | 'public-register' | 'student-login' | 'dashboard' | 'courses') => void;
   onScrollToSection?: (sectionId: string) => void;
+  activeStudent?: Student | null;
+  onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSection }) => {
+const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSection, activeStudent, onLogout }) => {
   const { language, setLanguage, t } = useLanguage();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -181,23 +184,45 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSe
               </button>
             </nav>
 
-            {/* Right Controls Action Button matching mock-up screen exactly */}
+             {/* Right Controls Action Button matching mock-up screen exactly */}
             <div className="hidden md:flex items-center space-x-4">
-              <button 
-                onClick={() => onSelectView('student-login')}
-                className={`text-xs font-black uppercase tracking-wider hover:text-[#B932B8] transition-all px-3 py-2 ${
-                  currentView === 'student-login' ? 'text-[#B932B8]' : 'text-slate-300'
-                }`}
-              >
-                {language === 'so' ? 'GALTA' : language === 'en' ? 'LOGIN' : 'ግባ'}
-              </button>
+              {activeStudent ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      if (onLogout) onLogout();
+                    }}
+                    className="text-xs font-black uppercase tracking-wider hover:text-red-400 text-slate-300 transition-all px-3 py-2"
+                  >
+                    {language === 'so' ? 'LOG OUT' : language === 'en' ? 'LOG OUT' : 'ውጣ'}
+                  </button>
 
-              <button 
-                onClick={() => handleNavItemClick('contact')}
-                className="bg-[#B932B8] hover:bg-[#a120a0] text-white px-6 py-3.5 rounded-sm text-xs font-black tracking-widest uppercase transition-all shadow-md transform active:scale-95 duration-150"
-              >
-                {language === 'so' ? 'LA XIRIIR' : language === 'en' ? 'CONTACT US' : 'ያግኙን'}
-              </button>
+                  <button 
+                    onClick={() => onSelectView('courses')}
+                    className="bg-[#B932B8] hover:bg-[#a120a0] text-white px-6 py-3.5 rounded-sm text-xs font-black tracking-widest uppercase transition-all shadow-md transform active:scale-95 duration-150"
+                  >
+                    {language === 'so' ? 'MY ACCOUNT' : language === 'en' ? 'MY ACCOUNT' : 'የእኔ መለያ'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => onSelectView('student-login')}
+                    className={`text-xs font-black uppercase tracking-wider hover:text-[#B932B8] transition-all px-3 py-2 ${
+                      currentView === 'student-login' ? 'text-[#B932B8]' : 'text-slate-300'
+                    }`}
+                  >
+                    {language === 'so' ? 'LOGIN' : language === 'en' ? 'LOGIN' : 'ግባ'}
+                  </button>
+
+                  <button 
+                    onClick={() => onSelectView('student-login')}
+                    className="bg-[#B932B8] hover:bg-[#a120a0] text-white px-6 py-3.5 rounded-sm text-xs font-black tracking-widest uppercase transition-all shadow-md transform active:scale-95 duration-150"
+                  >
+                    {language === 'so' ? 'SIGN IN' : language === 'en' ? 'SIGN IN' : 'ይመዝገቡ'}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu toggle bar */}
@@ -253,26 +278,53 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSe
               {language === 'so' ? 'BORTALADA' : language === 'en' ? 'PORTALS' : 'ጌቶች'}
             </p>
             <div className="grid grid-cols-2 gap-2 px-2 mb-4">
-              <button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onSelectView('student-login');
-                }}
-                className="py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 border border-white/10"
-              >
-                <i className="fas fa-user-lock text-amber-500"></i>
-                <span>Ardayda</span>
-              </button>
-              <button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onSelectView('dashboard');
-                }}
-                className="py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 border border-white/10"
-              >
-                <i className="fas fa-columns text-amber-500"></i>
-                <span>Maamulka</span>
-              </button>
+              {activeStudent ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onSelectView('courses');
+                    }}
+                    className="py-2.5 rounded-lg bg-[#B932B8]/20 hover:bg-[#B932B8]/30 text-[#B932B8] text-xs font-black flex items-center justify-center space-x-2 border border-[#B932B8]/30 uppercase tracking-wider"
+                  >
+                    <i className="fas fa-user-circle"></i>
+                    <span>{language === 'so' ? 'MY ACCOUNT' : 'MY ACCOUNT'}</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onLogout) onLogout();
+                    }}
+                    className="py-2.5 rounded-lg bg-red-950/40 hover:bg-red-900/30 text-red-400 text-xs font-black flex items-center justify-center space-x-2 border border-red-900/40 uppercase tracking-wider"
+                  >
+                    <i className="fas fa-sign-out-alt"></i>
+                    <span>{language === 'so' ? 'LOG OUT' : 'LOG OUT'}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onSelectView('student-login');
+                    }}
+                    className="py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 border border-white/10 uppercase tracking-wider"
+                  >
+                    <i className="fas fa-user-lock text-amber-500"></i>
+                    <span>LOGIN</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onSelectView('student-login');
+                    }}
+                    className="py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 border border-white/10 uppercase tracking-wider"
+                  >
+                    <i className="fas fa-sign-in-alt text-[#B932B8]"></i>
+                    <span>SIGN IN</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
