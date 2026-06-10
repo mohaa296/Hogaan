@@ -98,8 +98,21 @@ const profileTrans = {
 
 const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
   const { language } = useLanguage();
-  const [activeTab, setActiveTab ] = useState<'courses' | 'chat' | 'profile'>('courses');
+  const [activeTab, setActiveTab ] = useState<'courses' | 'chat' | 'profile' | 'verify'>('courses');
   const [copied, setCopied] = useState(false);
+
+  // Verification Form states
+  const [verifyName, setVerifyName] = useState(student.fullName || '');
+  const [verifyPhone, setVerifyPhone] = useState(student.phone || '');
+  const [verifyCity, setVerifyCity] = useState(student.address || '');
+  const [verifyCountry, setVerifyCountry] = useState(student.country || 'Somalia');
+  const [verifyIdType, setVerifyIdType] = useState<'' | 'National ID' | 'Passport' | 'Government ID'>('');
+  const [verifyIdNumber, setVerifyIdNumber] = useState('');
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [backImage, setBackImage] = useState<string | null>(null);
+  const [isVerifyingSubmitted, setIsVerifyingSubmitted] = useState(false);
+  const [isVerifyingLoading, setIsVerifyingLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Helper translations context fallback
   const p = profileTrans[language] || profileTrans['so'];
@@ -140,14 +153,16 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
               <p className="text-slate-500 font-medium">Ku soo dhawaaw, <span className="text-[#B932B8] font-bold">{student.fullName}</span></p>
             </div>
           </div>
-          <div className="flex items-center space-x-3 bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-200">
-            <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-[#B932B8]">
-              <i className="fas fa-certificate text-sm"></i>
+          <div className={`flex items-center space-x-3 bg-white px-6 py-3 rounded-2xl shadow-sm border transition-all duration-300 ${isVerified ? 'border-amber-300 bg-amber-500/5' : 'border-slate-200'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 ${isVerified ? 'bg-amber-500/10 text-amber-600 animate-pulse' : 'bg-purple-500/10 text-[#B932B8]'}`}>
+              <i className={`fas ${isVerified ? 'fa-award text-base' : 'fa-certificate text-sm'}`}></i>
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status-ka</p>
-              <p className="text-sm font-bold text-[#B932B8]">
-                {language === 'so' ? 'Arday Firfircoon' : language === 'en' ? 'Active Student' : 'ንቁ ተማሪ'}
+              <p className={`text-sm font-bold transition-colors duration-300 ${isVerified ? 'text-amber-600' : 'text-[#B932B8]'}`}>
+                {isVerified 
+                  ? (language === 'so' ? 'MEMBER FIRFIRCOON' : 'VERIFIED MEMBER')
+                  : (language === 'so' ? 'Arday Firfircoon' : language === 'en' ? 'Active Student' : 'ንቁ ተማሪ')}
               </p>
             </div>
           </div>
@@ -191,6 +206,21 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
             <span>
               {language === 'so' ? 'Profile-kayga' : language === 'en' ? 'My Profile' : 'መገለጫዬ'}
             </span>
+          </button>
+          <button 
+            id="tab-verify-btn"
+            onClick={() => setActiveTab('verify')}
+            className={`pb-3.5 text-xs md:text-sm font-black uppercase tracking-widest border-b-2 transition-all flex items-center space-x-2 relative ${
+              activeTab === 'verify' ? 'border-[#B932B8] text-[#B932B8]' : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <i className="fas fa-user-check"></i>
+            <span>
+              {language === 'so' ? 'Xaqiiji Koontada' : 'Verify Account'}
+            </span>
+            {!isVerified && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-slate-50"></span>
+            )}
           </button>
         </div>
 
@@ -282,6 +312,34 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
         {activeTab === 'profile' && (
           /* Student Profile View - Supports Printing */
           <div id="student-profile-view" className="grid grid-cols-1 lg:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-6 duration-300">
+            {/* Verification Banner Action Block */}
+            <div className={`col-span-full ${isVerified ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border-emerald-500/20 text-emerald-950' : 'bg-gradient-to-r from-amber-500/10 via-[#B932B8]/10 to-[#10223d]/5 border-amber-500/20 text-slate-900'} p-6 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden animate-in slide-in-from-top-4 print:hidden`}>
+              <div className="flex items-center space-x-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isVerified ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                  <i className={`fas ${isVerified ? 'fa-shield-check text-xl' : 'fa-user-clock text-xl'} `}></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-sm md:text-base tracking-tight uppercase flex items-center gap-1.5">
+                    {isVerified ? 'Hambalyo! Koontadaada waa la hubiyay' : 'XAQIIJI KOONTADAADA (VERIFY YOUR ACCOUNT)'}
+                    {isVerified && <span className="text-[10px] bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-widest">ACTIVE</span>}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed mt-0.5">
+                    {isVerified 
+                      ? 'Waxaad si guul leh u xaqiijisay document-yadaada aqoonsiga rasmiga ah ee dugsiga HOGAAN. Mahadsanid!'
+                      : 'Fadlan ku dar aqoonsigaaga (National ID, Passport ama kale) si kor loogu qaado badbaadada koontadaada ee nidaamka.'}
+                  </p>
+                </div>
+              </div>
+              {!isVerified && (
+                <button 
+                  onClick={() => setActiveTab('verify')}
+                  className="px-6 py-3 bg-[#B932B8] hover:bg-[#a120a0] text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-md active:scale-95 shrink-0"
+                >
+                  Hubi Hadda (Verify Now)
+                </button>
+              )}
+            </div>
+
             {/* Left Column: Personal and Registration Details */}
             <div className="lg:col-span-7 space-y-8 print:hidden">
               {/* Card 1: Personal Information */}
@@ -439,9 +497,9 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
                       <p className="text-[8px] text-purple-200/80 font-bold uppercase tracking-widest">Digital Academy</p>
                     </div>
                   </div>
-                  <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white mr-1 animate-pulse"></span>
-                    VERIFIED
+                  <span className={`${isVerified ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 text-slate-950 font-black border border-yellow-200 shadow-lg shadow-amber-500/20' : 'bg-emerald-500 text-white'} text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center shrink-0`}>
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1 ${isVerified ? 'bg-slate-950' : 'bg-white'} animate-pulse`}></span>
+                    {isVerified ? 'GOLD VERIFIED' : 'VERIFIED'}
                   </span>
                 </div>
 
@@ -535,6 +593,381 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
                 <span>{p.print_card}</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'verify' && (
+          <div className="max-w-3xl mx-auto bg-white rounded-[32px] border border-slate-250 shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Success Celebration View */}
+            {isVerified ? (
+              <div className="p-8 md:p-12 text-center space-y-8 relative overflow-hidden bg-gradient-to-b from-[#10223d] to-slate-950 text-white min-h-[500px] flex flex-col justify-center items-center">
+                {/* Visual asset/neon blurs */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#B932B8]/25 blur-[120px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 right-10 w-64 h-64 bg-amber-500/15 blur-[100px] rounded-full pointer-events-none"></div>
+
+                {/* Animated Gold Trophy Badge */}
+                <div className="relative flex justify-center py-2 animate-bounce">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-500 flex items-center justify-center text-slate-950 text-4xl shadow-2xl relative border-4 border-yellow-250">
+                    <i className="fas fa-award"></i>
+                    {/* Small pulsing radar ring */}
+                    <span className="absolute -inset-2 rounded-full border border-amber-400/50 animate-ping"></span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-w-xl mx-auto">
+                  <span className="text-amber-400 text-xs font-black uppercase tracking-widest bg-amber-400/10 px-4 py-1.5 rounded-full border border-amber-400/20">
+                    XAQQIJIYAY / FULLY VERIFIED MEMBESHIP
+                  </span>
+                  
+                  {/* Confirmatory Highlight Box */}
+                  <div className="bg-white/5 border border-white/10 rounded-[24px] p-6 space-y-4 hover:border-amber-400/20 transition-all duration-300">
+                    <h2 className="text-base md:text-lg font-black tracking-tight text-white leading-relaxed">
+                      HAMBALYO HADA WAXAAD TAHAY XUBIN FIRFIRCOON KU RAAXAYSO KOORSOOYINKA HOGAAN MAHADSANID
+                    </h2>
+                    <p className="text-xs text-slate-400 leading-relaxed font-semibold">
+                      CONGRATULATIONS! YOUR ACCOUNT STATUS HAS BEEN OFFICIALLY PROMOTED TO FULL LEVEL MEMBERSHIP. YOU NOW HAVE PERMANENT ACTIVE PASS ON ALL REVELANT STUDY RESOURCES.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Simulated dynamic submitted reference card summary */}
+                <div className="w-full max-w-md bg-white/5 border border-white/5 rounded-2xl p-4 text-left grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">Magaca</span>
+                    <span className="font-bold text-slate-200">{verifyName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">Dalka</span>
+                    <span className="font-bold text-slate-200">{verifyCountry}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">Taleefanka</span>
+                    <span className="font-bold text-slate-200 font-mono">{verifyPhone}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">Aqoonsiga</span>
+                    <span className="font-bold text-amber-400 uppercase">{verifyIdType || 'National ID'} ({verifyIdNumber})</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                  <button
+                    onClick={() => setActiveTab('courses')}
+                    className="w-full bg-[#B932B8] hover:bg-[#a120a0] py-4 rounded-xl text-white font-black text-xs uppercase tracking-widest transition-all hover:shadow-[#B932B8]/20 shadow-xl active:scale-95 flex items-center justify-center space-x-2"
+                  >
+                    <i className="fas fa-graduation-cap"></i>
+                    <span>Ku laabo Koorsooyinka</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className="w-full bg-slate-900 border border-white/15 hover:bg-slate-800 text-slate-300 py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center space-x-2"
+                  >
+                    <i className="fas fa-id-card"></i>
+                    <span>Arag Kaadhka Aqoonsiga</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Active Verification Requirement Page */
+              <div className="p-8 md:p-10 space-y-8">
+                {/* Header Information area */}
+                <div className="flex items-start space-x-4 border-b border-slate-100 pb-6">
+                  <div className="w-12 h-12 bg-purple-500/10 rounded-2xl text-[#B932B8] flex items-center justify-center text-xl shrink-0">
+                    <i className="fas fa-user-shield"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-950 tracking-tight">Codsiga Xaqiijinta Aqoonsiga</h3>
+                    <p className="text-xs text-slate-550 leading-relaxed mt-1">
+                      Fadlan ku buuxi xogta saxda ah ee hoose oo ku lifaaq sawirka aqoonsigaaga (National ID, Passport) si aad toos ugu hesho aqoonsi heerkiisu sarreeyo oo aad u hesho kaadhka rasmiga ah.
+                    </p>
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!verifyIdType) {
+                      alert(language === 'so' ? 'Fadlan dooro nooca aqoonsiga marka hore!' : 'Please select your identity card type first!');
+                      return;
+                    }
+                    setIsVerifyingLoading(true);
+
+                    // Simulated secure network identification verification step
+                    setTimeout(() => {
+                      setIsVerifyingLoading(false);
+                      setIsVerified(true);
+                      setIsVerifyingSubmitted(true);
+                    }, 1200);
+                  }}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Input: Full Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        Magacaaga oo Guuxa (Full Name)
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={verifyName}
+                        onChange={(e) => setVerifyName(e.target.value)}
+                        placeholder="Gali magacaaga oo saddexan"
+                        className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs md:text-sm font-semibold border border-slate-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all rounded-xl text-slate-900"
+                      />
+                    </div>
+
+                    {/* Input: Phone Number */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        Taleefankaaga (Phone Number)
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={verifyPhone}
+                        onChange={(e) => setVerifyPhone(e.target.value)}
+                        placeholder="Ex: +252 61xxxxxxx"
+                        className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs md:text-sm font-mono border border-slate-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all rounded-xl text-slate-900"
+                      />
+                    </div>
+
+                    {/* Input: Address location */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        Goobtaada / Magaalada (City / Location)
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={verifyCity}
+                        onChange={(e) => setVerifyCity(e.target.value)}
+                        placeholder="Ex: Mogadishu, Somalia"
+                        className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs md:text-sm font-semibold border border-slate-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all rounded-xl text-slate-900"
+                      />
+                    </div>
+
+                    {/* Selector: Country (All Countries) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        Wadanka (Select Country)
+                      </label>
+                      <select
+                        required
+                        value={verifyCountry}
+                        onChange={(e) => setVerifyCountry(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs md:text-sm font-bold border border-slate-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all rounded-xl text-slate-900"
+                      >
+                        {[
+                          "Somalia",
+                          "Ethiopia",
+                          "Kenya",
+                          "Djibouti",
+                          "Yemen",
+                          "Saudi Arabia",
+                          "Qatar",
+                          "United Arab Emirates",
+                          "Turkey",
+                          "Oman",
+                          "Kuwait",
+                          "United States",
+                          "United Kingdom",
+                          "Canada",
+                          "Sweden",
+                          "Norway",
+                          "Germany",
+                          "Malaysia",
+                          "Egypt",
+                          "Sudan",
+                          "South Sudan",
+                          "Uganda",
+                          "Tanzania",
+                          "Eritrea",
+                          "Somaliland",
+                          "Puntland"
+                        ].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Input Selector: Government Document ID Select */}
+                  <div className="space-y-3 bg-slate-50/50 p-6 rounded-2xl border border-dashed border-slate-200 transition-all duration-300">
+                    <label className="text-xs font-black text-[#10223d] uppercase tracking-widest block">
+                      Dooro Kadhadhka Sharciga ee aad haysato (Government Document ID)
+                    </label>
+                    <p className="text-[11px] text-slate-500 leading-normal">
+                      Dooro mid ka mid ah dukumiintiyadan hoose si aad u dhammaystirto xogtaada.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                      {[
+                        { type: 'National ID', label: 'National ID', icon: 'fa-id-card' },
+                        { type: 'Passport', label: 'Passport', icon: 'fa-passport' },
+                        { type: 'Government ID', label: 'Sharci Kale', icon: 'fa-file-invoice' }
+                      ].map((item) => (
+                        <button
+                          key={item.type}
+                          type="button"
+                          onClick={() => setVerifyIdType(item.type as any)}
+                          className={`p-4 border-2 rounded-xl text-center flex flex-col items-center justify-center space-y-2 transition-all duration-200 ${
+                            verifyIdType === item.type
+                              ? 'border-[#B932B8] bg-[#B932B8]/5 text-[#B932B8]'
+                              : 'border-slate-200 hover:border-slate-300 text-slate-500 bg-white'
+                          }`}
+                        >
+                          <i className={`fas ${item.icon} text-lg`}></i>
+                          <span className="text-xs font-black uppercase tracking-wider">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dynamic ID Form elements rendering after Document type is selected */}
+                  {verifyIdType && (
+                    <div className="space-y-6 bg-[#B932B8]/5 border border-[#B932B8]/10 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-300">
+                      <div className="flex items-center space-x-2 text-[#B932B8] font-bold border-b border-[#B932B8]/10 pb-3">
+                        <i className="fas fa-camera"></i>
+                        <h4 className="text-xs uppercase font-extrabold tracking-widest">
+                          Dhammayştir lifaaqyada: {verifyIdType}
+                        </h4>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Input ID Certificate Number */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-extrabold text-[#B932B8] uppercase tracking-widest block">
+                            Lambarka ID Qaran / Passport (ID or Document Number)
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            value={verifyIdNumber}
+                            onChange={(e) => setVerifyIdNumber(e.target.value)}
+                            placeholder="Ex: SOM-892302-N3"
+                            className="w-full px-4 py-3 bg-white text-xs md:text-sm font-mono font-bold border border-purple-200 focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all rounded-xl text-slate-900"
+                          />
+                        </div>
+
+                        {/* File inputs Zone for Front and Back side */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          {/* Front image upload block */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-extrabold text-[#B932B8] uppercase tracking-widest">Sawirka Hore ee ID-ga (Front Cover File)</span>
+                            <div 
+                              onClick={() => document.getElementById('front-file-elem')?.click()}
+                              className="border-2 border-dashed border-purple-200 hover:border-[#B932B8] bg-white h-40 rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all relative overflow-hidden group"
+                            >
+                              {frontImage ? (
+                                <>
+                                  <img src={frontImage} alt="Front ID Preview" className="w-full h-full object-cover rounded-xl" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                    <i className="fas fa-edit"></i> Bedel Sawirka
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center text-[#B932B8] mb-2">
+                                    <i className="fas fa-id-card-alt text-base"></i>
+                                  </div>
+                                  <p className="text-[11px] text-[#B932B8] font-black uppercase">SAWIRKA HORE</p>
+                                  <p className="text-[10px] text-slate-400 mt-1">Guji si aad u soo geliso</p>
+                                </>
+                              )}
+                              <input
+                                required={!frontImage}
+                                id="front-file-elem"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => setFrontImage(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Back image upload block */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-extrabold text-[#B932B8] uppercase tracking-widest">Sawirka Gadaal ee ID-ga (Back Cover File)</span>
+                            <div 
+                              onClick={() => document.getElementById('back-file-elem')?.click()}
+                              className="border-2 border-dashed border-purple-200 hover:border-[#B932B8] bg-white h-40 rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all relative overflow-hidden group"
+                            >
+                              {backImage ? (
+                                <>
+                                  <img src={backImage} alt="Back ID Preview" className="w-full h-full object-cover rounded-xl" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                    <i className="fas fa-edit"></i> Bedel Sawirka
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center text-[#B932B8] mb-2">
+                                    <i className="fas fa-id-card-alt text-base transform rotate-180"></i>
+                                  </div>
+                                  <p className="text-[11px] text-[#B932B8] font-black uppercase">SAWIRKA GADAAL</p>
+                                  <p className="text-[10px] text-slate-400 mt-1">Guji si aad u soo geliso</p>
+                                </>
+                              )}
+                              <input
+                                required={!backImage}
+                                id="back-file-elem"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => setBackImage(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submission triggers */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('profile')}
+                      className="px-6 py-3 border border-slate-200 hover:bg-slate-50 text-slate-605 font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
+                    >
+                      Kansal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isVerifyingLoading}
+                      className="px-8 py-4 bg-slate-900 hover:bg-[#B932B8] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:shadow-lg transition-all active:scale-95 duration-100 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      {isVerifyingLoading ? (
+                        <>
+                          <i className="fas fa-circle-notch animate-spin text-white"></i>
+                          <span>XAQQIIJINAYA...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-shield-alt text-xxs"></i>
+                          <span>DIR CODSIGA XAQIIJINTA</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
       </div>
