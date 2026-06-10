@@ -4,7 +4,7 @@ import { Student } from '../types';
 
 interface NavbarProps {
   currentView: string;
-  onSelectView: (view: 'landing' | 'public-register' | 'student-login' | 'dashboard' | 'courses') => void;
+  onSelectView: (view: 'landing' | 'public-register' | 'student-login' | 'dashboard' | 'courses' | 'student-chat') => void;
   onScrollToSection?: (sectionId: string) => void;
   activeStudent?: Student | null;
   onLogout?: () => void;
@@ -182,6 +182,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSe
               >
                 {language === 'so' ? 'LA XIRIIR' : language === 'en' ? 'CONTACT US' : 'ያግኙን'}
               </button>
+
+              <button 
+                onClick={() => onSelectView('public-chat')}
+                className={`px-4 py-2 rounded-md text-xs font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 ${
+                  currentView === 'public-chat' ? 'text-[#B932B8] bg-white/5' : 'text-slate-300 hover:text-[#B932B8]'
+                }`}
+              >
+                <i className="fas fa-comments text-[#B932B8]"></i>
+                <span>{language === 'so' ? 'Wada-hadalka' : language === 'en' ? 'COMMUNITY CHAT' : 'የውይይት መድረክ'}</span>
+              </button>
             </nav>
 
              {/* Right Controls Action Button matching mock-up screen exactly */}
@@ -270,6 +280,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onSelectView, onScrollToSe
             >
               <i className="fas fa-envelope text-slate-400 w-5"></i>
               <span>{t('menu_contact')}</span>
+            </button>
+            <button 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onSelectView('public-chat');
+              }}
+              className="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-200 hover:bg-white/5 hover:text-[#B932B8] flex items-center space-x-3"
+            >
+              <i className="fas fa-comments text-slate-400 w-5"></i>
+              <span>{language === 'so' ? 'Wada-hadalka (Community Chat)' : 'Community Chat'}</span>
             </button>
           </div>
 

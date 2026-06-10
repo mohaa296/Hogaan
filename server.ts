@@ -127,7 +127,8 @@ async function startServer() {
       senderId: req.body.senderId,
       senderName: req.body.senderName,
       senderRole: req.body.senderRole || "student",
-      text: req.body.text,
+      text: req.body.text || "",
+      imageUrl: req.body.imageUrl || undefined,
       timestamp: new Date().toLocaleTimeString("so-SO", { hour: "2-digit", minute: "2-digit" })
     };
     chats.push(newMessage);

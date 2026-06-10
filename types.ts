@@ -59,6 +59,7 @@ export interface ChatMessage {
   senderRole: 'student' | 'admin';
   text: string;
   timestamp: string;
+  imageUrl?: string;
 }
 
 export interface AppState {
@@ -66,5 +67,5 @@ export interface AppState {
   courses: Course[];
   notifications: AppNotification[];
   messages?: ChatMessage[];
-  view: 'landing' | 'dashboard' | 'register' | 'list' | 'pending-list' | 'ai-insights' | 'public-register' | 'public-success' | 'courses' | 'student-login' | 'manage-courses' | 'languages' | 'student-chat';
+  view: 'landing' | 'dashboard' | 'register' | 'list' | 'pending-list' | 'ai-insights' | 'public-register' | 'public-success' | 'courses' | 'student-login' | 'manage-courses' | 'languages' | 'student-chat' | 'public-chat';
 }

@@ -114,6 +114,258 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
   const [isVerifyingLoading, setIsVerifyingLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  // Player & Interactive View States
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [activeLessonIndex, setActiveLessonIndex] = useState<number>(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
+  const [playerTab, setPlayerTab] = useState<'summary' | 'qa' | 'resources'>('summary');
+  
+  // Custom Questions submitted in active course player
+  const [questionsByCourse, setQuestionsByCourse] = useState<Record<string, { id: string; user: string; text: string; time: string; answer?: string }[]>>({
+    "c-video-editing": [
+      { id: "q1", user: "Maxamed Cali", text: "Adobe Premiere Pro ma ku shaqayn karaa computer 8GB RAM ah?", time: "2 maalin ka hor", answer: "Haa, wuu ku shaqayn karaa laakiin waxa fiican inaad isticmaasho proxies si uusan u gaabin computerkaaga inta aad edit-ka ku guda jirto." }
+    ],
+    "c-graphic-design": [
+      { id: "q2", user: "Fartuun Axmed", text: "Ma heli karnaa Photoshop bilaash ah oo aan ku shaqaysano?", time: "Hadda", answer: "Dugsigu wuxuu ardayda la wadaagayaa link-yo aad ka heli kartaan Creative Cloud oo tijaabo ah ama xubinnimo arday oo dhimis leh. Fiiri qaybta Kheyraadka!" }
+    ]
+  });
+  const [newQuestionText, setNewQuestionText] = useState("");
+
+  const lessonsMap: Record<string, { title: string; duration: string; summary: string; materials: { name: string; size: string }[] }[]> = {
+    "c-video-editing": [
+      { 
+        title: "Qaybta 1aad: Hordhaca Premiere Pro & Interface-ka", 
+        duration: "12:45", 
+        summary: "Casharkaan waxaad ku baran doontaa qaabka loo furo barnaamijka Adobe Premiere Pro, deegaanka shaqada (workspace), xulashada habboon ee settings-ka mashruuca cusub iyo soo dhoofinta clips-ka rasmiga ah si habaysan.",
+        materials: [
+          { name: "Premiere_Intro_CheatSheet.pdf", size: "1.4 MB" },
+          { name: "Practice_Raw_Footage.zip", size: "142 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 2aad: Timeline-ka & Furaha Goynta Muuqaalada", 
+        duration: "18:20", 
+        summary: "Baro qaabka ugu habboon ee loo jaro lana isugu geeyo clip-yada iyadoo la joogtaynayo laxanka muhiimka ah. Waxaan sidoo kale ku baran doonaa shortcuts-ka adduunka badbaadiya ee goynta degdegga ah.",
+        materials: [
+          { name: "Timeline_Shortcuts_Guide.pdf", size: "850 KB" }
+        ]
+      },
+      { 
+        title: "Qaybta 3aad: Habaynta Midabada (Color Correction & Grading)", 
+        duration: "14:15", 
+        summary: "Baro aasaaska Lumetri Color Panel. Sida loo saxo iftiinka (exposure), caddaan-la'aanta (white balance), iyo saamaynta moodka midabaysan (cinematic grading) si muuqaalku ugu muuqdo heersare.",
+        materials: [
+          { name: "Hogaan_Cinematic_LUTs.cube", size: "4.2 MB" },
+          { name: "Color_Grading_Syllabus.pdf", size: "2.1 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 4aad: VFX Transitions & Habaynta Maqalka", 
+        duration: "16:35", 
+        summary: "Baro ku darista transitions oo nadiif ah, mihnado sound effects ah oo kor u qaadaya tayada, iyo sidayada u nadiifin lahayn guuxa dambe (noise reduction) adoo adeegsanaya Essential Sound.",
+        materials: [
+          { name: "Background_Sfx_Pack.zip", size: "48 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 5aad: Keydinta & Dhoofinta (Export for TikTok & YouTube)", 
+        duration: "10:50", 
+        summary: "Baro dhoofinta muuqaalada adigoo isticmaalaya presets sax ah sida H.264, bitrates-ka saxda ah ee baraha bulshada ee dammaanad qaadaya in tayadu aysan ka lumin clip-ka dhamaadka.",
+        materials: [
+          { name: "Optimal_Export_Settings.pdf", size: "620 KB" }
+        ]
+      }
+    ],
+    "c-graphic-design": [
+      { 
+        title: "Qaybta 1aad: Aasaaska Naqshadaynta (Typography & Colors)", 
+        duration: "14:10", 
+        summary: "Baro doorashada midabada ku habboon mashruucaaga, sarraynta qoraalka (typography hierarchy), iyo xeerarka ugu muhiimsan ee naqshadaynta indhaha soo jiidata.",
+        materials: [
+          { name: "Color_Harmonies_Cheatsheet.pdf", size: "1.8 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 2aad: Adobe Photoshop Layers & Selection Mastery", 
+        duration: "19:30", 
+        summary: "Casharkaan waxaa lagugu bari doonaa sida loo adeegsado layers-ka qaabka professional-ka ah, adeegsiga mask-ka si aad u badasho asalka muuqaalada adoon duminta clips-ka dhabta ah.",
+        materials: [
+          { name: "Photoshop_Keyboard_Map.pdf", size: "1.1 MB" },
+          { name: "Background_Removal_Assigment.zip", size: "15 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 3aad: Vector Art weynayn adoo adeegsanaya Illustrator", 
+        duration: "22:15", 
+        summary: "Baro gundhiga Adobe Illustrator, sida loo naqshadeeyo astaamo vector ah oo gabi ahaanba nadiif ah iyadoo la isticmaalayo Pen Tool, Shape Builder iyo Pathfinder.",
+        materials: [
+          { name: "Pen_Tool_Practice_Canvas.ai", size: "8.5 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 4aad: Naqshadaynta Boorarka iyo Social Media Templates", 
+        duration: "15:40", 
+        summary: "Baro sida loo abuuro xayeysiisyo baraha bulshada oo dhiiri-geliya macaamiisha inay ku soo galaan meheradda ama ay wax iibsadaan, iyadoo la ilaalinayo astaanta rasmiga ah.",
+        materials: [
+          { name: "Editable_Social_Media_Kit.psd", size: "38 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 5aad: Sida Loo Diyaariyo Naqshada si loo Daabaco", 
+        duration: "11:25", 
+        summary: "Baro farqiga u dhexeeya RGB iyo CMYK iyo qaabka loo kaydiyo faylasha habboon ee mashiinka daabacaadda rasmiga ah si midabadu u soo baxaan si sax ah.",
+        materials: [
+          { name: "Print_Checklist_Guide.pdf", size: "1.2 MB" }
+        ]
+      }
+    ],
+    "c-web-dev": [
+      { 
+        title: "Qaybta 1aad: Baro HTML5 & Hab-dhismeedka Websaydka", 
+        duration: "15:50", 
+        summary: "Baro aasaaska HTML, xeerarka sallaxa ah (semantig tags), qaab u dhisidda qayb kasta oo shabakadda ka mid ah sida header, section, iyo footer.",
+        materials: [
+          { name: "HTML5_Essentials_CheatSheet.png", size: "520 KB" }
+        ]
+      },
+      { 
+        title: "Qaybta 2aad: Naqshadaynta CSS3 & Tailwind CSS Magic", 
+        duration: "21:10", 
+        summary: "Ku habayso midabada, meelaynta iyo margins-ka shabakadaada adigoo isticmaalaya Tailwind CSS. Baro flexbox, grid, iyo sidii aad bogga uga dhigi lahayd mid ka jawaaba shaashadaha kala duwan.",
+        materials: [
+          { name: "Tailwind_Responsive_CheatSheet.pdf", size: "1.4 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 3aad: JavaScript Aasaasiga ah (Variables & Events)", 
+        duration: "18:30", 
+        summary: "Baro sida shabakadaada looga dhigo mid dareenta falalka isticmaalaha. Waxaan baranaynaa variable-yada, loops, functions, iyo manipulating DOM si loo abuuro interactions xiiso leh.",
+        materials: [
+          { name: "JS_Basics_Notes.txt", size: "12 KB" }
+        ]
+      },
+      { 
+        title: "Qaybta 4aad: React.js Component Lifecycle & State", 
+        duration: "24:45", 
+        summary: "Baro sababta React u yahay boqorka dhismaha web-yada. Waxaan baran doonaa dhismaha components-ka, wareejinta props-ka, iyo sida `useState` u bedesho waxa ka muuqda shaashada.",
+        materials: [
+          { name: "My_First_React_App.zip", size: "1.8 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 5aad: Dajinta Mashruuca (Deployment) ee bogga tooska ah", 
+        duration: "13:20", 
+        summary: "Baro nidaamka tooska ah ee aad ku geynayso mashaariicdaada shabakadda internetka dhabta ah adoo adeegsanaya Vercel iyo GitHub, si qof walba u arko xirfadaada.",
+        materials: [
+          { name: "Deployment_Command_Guide.pdf", size: "350 KB" }
+        ]
+      }
+    ],
+    "c-digital-marketing": [
+      { 
+        title: "Qaybta 1aad: Suuqgeynta Dijitaalka ah (Introduction)", 
+        duration: "11:40", 
+        summary: "Baro mabaadii'da aasaasiga ah ee suuqgeynta dijitaalka ah. Sida loo fahmo hab-dhaqanka macaamiisha internet-ka isticmaala iyo dhisidda istiraatiijiyad guuleysata.",
+        materials: [
+          { name: "Digital_Marketing_CheatSheet.pdf", size: "900 KB" }
+        ]
+      },
+      { 
+        title: "Qaybta 2aad: Facebook iyo Instagram Ads Strategy", 
+        duration: "17:50", 
+        summary: "Baro sida loo isticmaalo Meta Ads Manager si toos ah. Habaynta Pixel, dhisidda custom audiences, iyo xeeladaha targeting ee keenaya sales dhab ah.",
+        materials: [
+          { name: "Meta_Ads_Guide_2026.pdf", size: "3.5 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 3aad: SEO & Sida looga muuqdo google had iyo goor", 
+        duration: "13:10", 
+        summary: "Wax ka baro on-page iyo off-page SEO, sida qoraalada loogu sameeyo keywords wax ku ool ah, si website-kaagu ugu soo baxo safka hore ee natiijooyinka raadinta google.",
+        materials: [
+          { name: "SEO_Checklist_Handbook.pdf", size: "1.7 MB" }
+        ]
+      },
+      { 
+        title: "Qaybta 4aad: Copywriting & Copy oo iibinaya dhab ahaan", 
+        duration: "16:20", 
+        summary: "Baro naqshadaynta qoraalada xayeysiisyada ee soo reeba xiiso iyo dareen iibsi oo dhab ah, adoo isticmaalaya qaab dhismeedka caanka ah ee AIDA.",
+        materials: [
+          { name: "High_Converting_Copy_Samples.pdf", size: "820 KB" }
+        ]
+      },
+      { 
+        title: "Qaybta 5aad: Personal Branding & Ku dhisida Portfolio", 
+        duration: "12:45", 
+        summary: "Baro siday habboon ee shirkadaha ama macaamiisha dalka gudahiisa iyo dibadiisa aad ugu helayso adigoo dhisaya magac professional ah ee LinkedIn iyo baraha bulshada.",
+        materials: [
+          { name: "Branding_Planner_Weekly.pdf", size: "450 KB" }
+        ]
+      }
+    ]
+  };
+
+  const getLessonsList = (courseId: string, courseTitle: string) => {
+    return lessonsMap[courseId] || [
+      { 
+        title: `Qaybta 1aad: Hordhaca ${courseTitle}`, 
+        duration: "15:00", 
+        summary: `Gundhiga guud ee ku saabsan koorsada ${courseTitle}. Casharka dhexdiisa waxaan ku faahfaahin doonaa mawaadiicda muhiimka ah ee barashadan dhabta ah.`,
+        materials: [{ name: "Handbook_Lesson_1.pdf", size: "1.2 MB" }]
+      },
+      { 
+        title: `Qaybta 2aad: Tababarka Tooska ah ee ${courseTitle}`, 
+        duration: "18:30", 
+        summary: `Halkan waxaan si toos u samayn doonaa tusaale hawleed lagu sharaxayo casharka la bartay ee ku saabsan ${courseTitle}.`,
+        materials: [{ name: "Exercise_Files.zip", size: "8.5 MB" }]
+      },
+      { 
+        title: `Qaybta 3aad: Mashaariicda & Qiimaynta Caalamiga ah`, 
+        duration: "12:40", 
+        summary: `Casharka ugu dambeeya iyo mashaariicda gacanqabsiga ee layliga loogu talagalay si weyn ugu qayb qaadanaya xaqiijinta xirfadaada rasmiga ah.`,
+        materials: [{ name: "Project_Syllabus.pdf", size: "1.4 MB" }]
+      }
+    ];
+  };
+
+  const handlePostQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuestionText.trim() || !selectedCourse) return;
+    
+    const cId = selectedCourse.id;
+    const newQ = {
+      id: "q_user_" + Date.now(),
+      user: student.fullName,
+      text: newQuestionText.trim(),
+      time: "Hadda",
+      answer: "Waad ku mahadsan tahay su'aashaada! Macalinku dhawaan ayuu kuugu soo jawaabi doonaa halkan."
+    };
+
+    setQuestionsByCourse(prev => ({
+      ...prev,
+      [cId]: [newQ, ...(prev[cId] || [])]
+    }));
+    setNewQuestionText("");
+  };
+
+  // Timer simulation when video is playing
+  React.useEffect(() => {
+    let interval: any;
+    if (isVideoPlaying) {
+      interval = setInterval(() => {
+        setVideoProgress(prev => {
+          if (prev >= 100) {
+            setIsVideoPlaying(false);
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isVideoPlaying]);
+
   // Helper translations context fallback
   const p = profileTrans[language] || profileTrans['so'];
 
@@ -225,78 +477,486 @@ const Courses: React.FC<CoursesProps> = ({ student, courses, onBack }) => {
         </div>
 
         {activeTab === 'courses' && (
-          /* Course Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:hidden">
-            {courses.length > 0 ? courses.map((course) => (
-              <div key={course.id} id={`course-card-${course.id}`} className="group bg-white rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 flex flex-col">
-                {/* Thumbnail Section */}
-                <div className="h-48 relative overflow-hidden bg-slate-200">
-                  {course.thumbnail ? (
-                    <img 
-                      src={course.thumbnail} 
-                      alt={course.title} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className={`${course.color} w-full h-full flex items-center justify-center`}>
-                      <i className={`fas ${course.icon} text-6xl text-white/30`}></i>
+          <div className="animate-in fade-in duration-300">
+            {selectedCourse ? (
+              /* MAGNIFICENT INTERACTIVE COURSE PLAYER MODE */
+              <div className="space-y-8">
+                {/* Back Link & Info Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <button 
+                      onClick={() => {
+                        setSelectedCourse(null);
+                        setIsVideoPlaying(false);
+                        setVideoProgress(0);
+                      }}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-[#B932B8] hover:text-white transition-all text-slate-800 text-xs font-black uppercase tracking-widest rounded-xl active:scale-95 flex items-center space-x-2"
+                    >
+                      <i className="fas fa-arrow-left"></i>
+                      <span>Ku laabo Koorsooyinka</span>
+                    </button>
+                    <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                        <span>{selectedCourse.title}</span>
+                        <span className="text-[9px] bg-[#B932B8]/10 text-[#B932B8] px-2 py-0.5 rounded-md">{selectedCourse.level}</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 font-medium">Macallin: <span className="font-bold text-[#B932B8]">{selectedCourse.teacher}</span></p>
                     </div>
-                  )}
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-black/20 backdrop-blur-md text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest font-mono">
-                      {course.level}
-                    </span>
                   </div>
-                  {!course.thumbnail && (
-                    <div className="absolute bottom-4 left-4 bg-white p-3 rounded-2xl shadow-lg">
-                      <i className={`fas ${course.icon} text-xl text-slate-900`}></i>
-                    </div>
+
+                  {isVerified && (
+                    <span className="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-[10px] font-black px-4 py-2 rounded-2xl flex items-center gap-1.5 shadow-md">
+                      <i className="fas fa-crown"></i>
+                      <span>VERIFIED VIP PASS ACTIVE</span>
+                    </span>
                   )}
                 </div>
-                
-                <div className="p-8 flex-grow space-y-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-[#B932B8] transition-colors">{course.title}</h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
-                        <i className="fas fa-user-tie text-[10px] text-slate-400"></i>
+
+                {/* Main Player Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: Player View and Tabs */}
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* The Interactive Video Box */}
+                    <div className="relative aspect-video rounded-3xl bg-slate-950 border border-slate-900 shadow-2xl overflow-hidden group">
+                      {/* Video Player Wallpaper Backdrop */}
+                      {selectedCourse.thumbnail ? (
+                        <img 
+                          src={selectedCourse.thumbnail} 
+                          alt="Video Cover" 
+                          className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm brightness-50"
+                        />
+                      ) : (
+                        <div className={`absolute inset-0 w-full h-full ${selectedCourse.color} opacity-10 blur-md`}></div>
+                      )}
+
+                      {/* Display overlay centered depending on play state */}
+                      {isVideoPlaying ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 space-y-4">
+                          {/* Pulsing Visual Waveform */}
+                          <div className="flex items-end justify-center space-x-1.5 h-16">
+                            <span className="w-1.5 bg-[#B932B8] rounded z-10 animate-[pulse_1.2s_infinite]"></span>
+                            <span className="w-1.5 bg-[#B932B8] rounded z-10 animate-[pulse_0.8s_infinite] delay-100" style={{ height: '70%' }}></span>
+                            <span className="w-1.5 bg-purple-500 rounded z-10 animate-[pulse_1.5s_infinite] delay-200" style={{ height: '100%' }}></span>
+                            <span className="w-1.5 bg-[#B932B8] rounded z-10 animate-[pulse_1s_infinite] delay-300" style={{ height: '40%' }}></span>
+                            <span className="w-1.5 bg-pink-500 rounded z-10 animate-[pulse_1.3s_infinite] delay-150" style={{ height: '80%' }}></span>
+                          </div>
+                          
+                          <div className="text-center space-y-1 z-10">
+                            <h4 className="text-white text-xs md:text-sm font-black uppercase tracking-wider">Muuqaalka Waa Toos (Streaming Lesson Video)</h4>
+                            <p className="text-purple-300/80 text-[10px] font-mono leading-none">CASHARKII {activeLessonIndex + 1}AAD OO SOCDA...</p>
+                          </div>
+
+                          {/* Interactive Pause Overlay Button */}
+                          <button 
+                            onClick={() => setIsVideoPlaying(false)}
+                            className="absolute inset-0 w-full h-full bg-black/0 hover:bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                          >
+                            <span className="w-16 h-16 rounded-full bg-white text-slate-900 flex items-center justify-center text-xl shadow-2xl transform active:scale-90 transition-transform">
+                              <i className="fas fa-pause"></i>
+                            </span>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Big Play Trigger Overlay */
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 space-y-6 text-center z-10 backdrop-blur-sm bg-black/40">
+                          <button 
+                            onClick={() => setIsVideoPlaying(true)}
+                            className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#B932B8] to-purple-500 hover:from-purple-600 hover:to-pink-500 text-white flex items-center justify-center text-2xl shadow-2xl relative border-4 border-white/20 hover:scale-110 active:scale-90 duration-300 group"
+                          >
+                            <i className="fas fa-play ml-1"></i>
+                            {/* radar pulsing rings */}
+                            <span className="absolute -inset-2 rounded-full border border-purple-400/50 animate-ping"></span>
+                          </button>
+
+                          <div className="max-w-md space-y-2">
+                            <span className="bg-purple-500/20 text-purple-200 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-500/30">
+                              Casharka {activeLessonIndex + 1}aad ({getLessonsList(selectedCourse.id, selectedCourse.title)[activeLessonIndex]?.duration})
+                            </span>
+                            <h3 className="text-white font-black text-sm md:text-base leading-snug">
+                              {getLessonsList(selectedCourse.id, selectedCourse.title)[activeLessonIndex]?.title}
+                            </h3>
+                            <p className="text-slate-400 text-[11px] leading-relaxed">
+                              Guji badhanka dhexda ku yaal si aad u bilowdo ama u sii wadato casharka rasmiga ah.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Video Player Control bar at bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 flex flex-col space-y-2 z-20">
+                        {/* Custom Seek Bar */}
+                        <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden cursor-pointer" onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const clickX = e.clientX - rect.left;
+                          const width = rect.width;
+                          setVideoProgress(Math.floor((clickX / width) * 100));
+                        }}>
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#B932B8] to-pink-500 rounded-full transition-all duration-300"
+                            style={{ width: `${videoProgress}%` }}
+                          ></div>
+                        </div>
+
+                        {/* Player Elements Row */}
+                        <div className="flex items-center justify-between text-white text-xs">
+                          <div className="flex items-center space-x-3">
+                            <button 
+                              onClick={() => setIsVideoPlaying(!isVideoPlaying)}
+                              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all text-sm"
+                            >
+                              <i className={`fas ${isVideoPlaying ? 'fa-pause' : 'fa-play ml-0.5'}`}></i>
+                            </button>
+                            <span className="font-mono text-[11px] text-slate-300">
+                              0:{videoProgress < 10 ? '0' + videoProgress : videoProgress} / {getLessonsList(selectedCourse.id, selectedCourse.title)[activeLessonIndex]?.duration || "15:00"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-4 text-slate-300">
+                            {/* Volume */}
+                            <button className="hover:text-white transition-all">
+                              <i className="fas fa-volume-up"></i>
+                            </button>
+                            <div className="w-16 h-1 bg-white/30 rounded-full overflow-hidden relative hidden sm:block">
+                              <div className="absolute left-0 top-0 bottom-0 w-4/5 bg-white"></div>
+                            </div>
+                            {/* HD Selector */}
+                            <span className="text-[10px] font-extrabold uppercase bg-white/20 px-1.5 py-0.5 rounded border border-white/25">1080p HD</span>
+                            {/* Fullscreen icon */}
+                            <button className="hover:text-white transition-all" onClick={() => alert("Waqtiga tijaabada, fullscreen waxaa badelay video laboratoriga tayada sare leh!")}>
+                              <i className="fas fa-expand"></i>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-500 font-medium">{course.teacher}</p>
+                    </div>
+
+                    {/* Meta Tabs Switcher */}
+                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                      <div className="flex border-b border-slate-150">
+                        {[
+                          { id: 'summary', name: 'Sifada Casharka', icon: 'fa-align-left' },
+                          { id: 'qa', name: 'Su’aalo & Jawaabo', icon: 'fa-question-circle' },
+                          { id: 'resources', name: 'Kheyraadka (Files)', icon: 'fa-download' }
+                        ].map((tb) => (
+                          <button
+                            key={tb.id}
+                            onClick={() => setPlayerTab(tb.id as any)}
+                            className={`flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 transition-all flex items-center justify-center space-x-2 ${
+                              playerTab === tb.id ? 'border-[#B932B8] text-[#B932B8] bg-slate-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
+                            }`}
+                          >
+                            <i className={`fas ${tb.icon}`}></i>
+                            <span className="hidden sm:inline">{tb.name}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="p-6">
+                        {/* Tab 1: Lesson Overview */}
+                        {playerTab === 'summary' && (
+                          <div className="space-y-4 animate-in fade-in duration-200">
+                            <h4 className="font-black text-slate-950 text-base">Xogta Casharkan:</h4>
+                            <p className="text-xs text-slate-600 leading-relaxed font-semibold bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                              {getLessonsList(selectedCourse.id, selectedCourse.title)[activeLessonIndex]?.summary}
+                            </p>
+                            <div className="pt-2">
+                              <div className="flex items-center space-x-3 text-xs bg-purple-500/5 p-4 rounded-xl border border-purple-200/50">
+                                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-[#B932B8]">
+                                  <i className="fas fa-info-circle"></i>
+                                </div>
+                                <p className="text-slate-550 font-medium">Fadlan dhagayso casharka oo dhammaystiran si aad u fahamto layliska qoran iyo tababarka dhabta ah.</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tab 2: Q&A Forum */}
+                        {playerTab === 'qa' && (
+                          <div className="space-y-6 animate-in fade-in duration-200">
+                            <h4 className="font-black text-slate-950 text-base">Weydii Macallinka Su'aal:</h4>
+                            
+                            <form onSubmit={handlePostQuestion} className="flex gap-3">
+                              <input 
+                                required
+                                value={newQuestionText}
+                                onChange={(e) => setNewQuestionText(e.target.value)}
+                                type="text" 
+                                placeholder="Ku qor halkan su'aashaada ku saabsan casharkan..."
+                                className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 focus:bg-white text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#B932B8] focus:border-transparent outline-none transition-all text-slate-900 font-medium font-sans"
+                              />
+                              <button
+                                type="submit"
+                                className="px-5 bg-slate-950 hover:bg-[#B932B8] text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shrink-0"
+                              >
+                                Dir
+                              </button>
+                            </form>
+
+                            {/* Questions list */}
+                            <div className="space-y-4 border-t border-slate-100 pt-5">
+                              {(questionsByCourse[selectedCourse.id] || []).length > 0 ? (
+                                (questionsByCourse[selectedCourse.id] || []).map((q) => (
+                                  <div key={q.id} className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-3">
+                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                                      <span className="text-[#B932B8] uppercase">{q.user}</span>
+                                      <span>{q.time}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-800 font-bold">{q.text}</p>
+                                    {q.answer && (
+                                      <div className="bg-white p-3 rounded-xl border border-slate-200/60 flex items-start space-x-2">
+                                        <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[8px] font-bold uppercase shrink-0">M</div>
+                                        <div>
+                                          <p className="text-[10px] font-black text-[#B932B8] uppercase leading-none">Macallinka Dugsiga</p>
+                                          <p className="text-[11px] text-slate-500 font-bold mt-1 leading-normal">{q.answer}</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-8 text-slate-400 text-xs font-bold space-y-2">
+                                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                                    <i className="far fa-comments text-lg"></i>
+                                  </div>
+                                  <p>Wali wax su'aalo ah laguma soo qorin casharkan. Noqo qofka ugu horeeya!</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tab 3: Downloads & Resources */}
+                        {playerTab === 'resources' && (
+                          <div className="space-y-4 animate-in fade-in duration-200">
+                            <h4 className="font-black text-slate-950 text-base">Faylasha Casharka ee Diyaarka ah:</h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {(getLessonsList(selectedCourse.id, selectedCourse.title)[activeLessonIndex]?.materials || []).map((mat, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between hover:border-[#B932B8] transition-all group">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-[#B932B8]">
+                                      <i className="fas fa-file-pdf text-lg"></i>
+                                    </div>
+                                    <div className="text-left">
+                                      <p className="text-xs font-bold text-slate-900 max-w-[140px] truncate">{mat.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-semibold">{mat.size}</p>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onClick={() => alert(`Faylka ${mat.name} waxaa si toos ah loogu shubayaa aaladdaada mar dhow!`)}
+                                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-[#B932B8] hover:text-white flex items-center justify-center text-slate-500 text-xs transition-all active:scale-90"
+                                    title="Soo download garee"
+                                  >
+                                    <i className="fas fa-download"></i>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {course.description && (
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                      {course.description}
-                    </p>
-                  )}
+                  {/* Right Column: Complete Lesson Outlines */}
+                  <div className="lg:col-span-4 space-y-4">
+                    <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+                      <div className="border-b border-slate-100 pb-3">
+                        <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest flex items-center justify-between">
+                          <span>Syllabus-ka Casharada</span>
+                          <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-500 font-mono font-bold">
+                            {getLessonsList(selectedCourse.id, selectedCourse.title).length} Cashar
+                          </span>
+                        </h4>
+                      </div>
 
-                  <div className="space-y-2 pt-2">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="text-slate-400 uppercase tracking-wider">Horumarka</span>
-                      <span className="text-[#B932B8]">0%</span>
+                      <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                        {getLessonsList(selectedCourse.id, selectedCourse.title).map((les, idx) => {
+                          const isActive = idx === activeLessonIndex;
+                          const isVisitedBefore = idx < activeLessonIndex;
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setActiveLessonIndex(idx);
+                                setIsVideoPlaying(false);
+                                setVideoProgress(0);
+                              }}
+                              className={`w-full p-4 rounded-2xl text-left border flex items-center justify-between transition-all duration-200 group ${
+                                isActive 
+                                  ? 'bg-[#B932B8] text-white border-transparent shadow-lg shadow-[#B932B8]/15 hover:shadow-xl' 
+                                  : 'bg-slate-50 hover:bg-slate-100 border-slate-150 text-slate-900'
+                              }`}
+                            >
+                              <div className="flex items-start space-x-3 max-w-[85%]">
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 ${
+                                  isActive 
+                                    ? 'bg-white text-[#B932B8]' 
+                                    : isVisitedBefore 
+                                      ? 'bg-green-500 text-white' 
+                                      : 'bg-slate-200 text-slate-500'
+                                }`}>
+                                  {isVisitedBefore ? <i className="fas fa-check"></i> : idx + 1}
+                                </span>
+                                <div>
+                                  <p className={`text-[11px] font-black line-clamp-2 ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                                    {les.title}
+                                  </p>
+                                  <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${isActive ? 'text-purple-200' : 'text-slate-400'}`}>
+                                    Muddada: {les.duration}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="shrink-0">
+                                <i className={`fas ${
+                                  isActive 
+                                    ? 'fa-play-circle text-lg text-white' 
+                                    : 'fa-lock-open text-xs text-slate-300'
+                                }`}></i>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-[#B932B8] rounded-full transition-all duration-1000" 
-                        style={{ width: `0%` }}
-                      ></div>
+
+                    {/* Fast Academic Support Banner */}
+                    <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-6 rounded-3xl text-white border border-white/5 relative overflow-hidden text-center space-y-4">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-[#B932B8]/30 blur-2xl rounded-full pointer-events-none"></div>
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-[#B932B8] mx-auto text-xl">
+                        <i className="fas fa-headset animate-bounce"></i>
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-xs uppercase tracking-widest text-[#B932B8]">Miyey Wax Kaaga Murgsan Yihiin?</h4>
+                        <p className="text-[10px] text-slate-300 leading-relaxed font-semibold">
+                          Waxaad si toos ah ula xidhiidhi kartaa macallimiinta iyo ardayda kale adoo isticmaalaya tab-ka Wada-hadalka ee dugsiga.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setActiveTab('chat')}
+                        className="w-full py-3 bg-[#B932B8] hover:bg-[#a120a0] rounded-xl text-white font-black text-[10px] uppercase tracking-wider transition-all"
+                      >
+                        Tag Qolka Wada-hadalka
+                      </button>
                     </div>
                   </div>
-
-                  <button className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-bold text-sm tracking-widest uppercase hover:bg-[#B932B8] transition-all active:scale-95 flex items-center justify-center space-x-2">
-                    <span>Biloow Barashada</span>
-                    <i className="fas fa-play text-[10px]"></i>
-                  </button>
                 </div>
               </div>
-            )) : (
-              <div className="col-span-full py-24 text-center">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <i className="fas fa-book-open text-3xl text-slate-300"></i>
+            ) : (
+              /* REGULAR COURSES LIST - CATALOG WITH ALL COURSES AVAILABLE ON WEBSITE */
+              <div>
+                {/* Search / Filter bar to customize lookup */}
+                <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center space-x-3 mb-1 md:mb-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#B932B8]/10 text-[#B932B8] flex items-center justify-center">
+                      <i className="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Dhamaan Koorsooyinka website-ka</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase leading-none mt-0.5">XUBIN AH / SELECTION OF ALL REGISTERED CURRICULUMS</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-slate-900 text-white font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wider">
+                    {courses.length} Koorso Ayaa Diyaar Ah
+                  </span>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800">Ma jiraan koorsooyin hadda diyaarka ah.</h3>
-                <p className="text-slate-500 mt-2">Maamuluhu wali ma uusan soo gelin casharo cusub.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:hidden">
+                  {courses.length > 0 ? courses.map((course) => (
+                    <div 
+                      key={course.id} 
+                      id={`course-card-${course.id}`} 
+                      className="group bg-white rounded-[32px] shadow-sm hover:shadow-xl border border-slate-200/60 overflow-hidden transition-all duration-300 flex flex-col relative"
+                    >
+                      {/* Active level label on top of cover */}
+                      <div className="absolute top-4 left-4 z-10">
+                        <span className="bg-black/40 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest font-mono">
+                          {course.level}
+                        </span>
+                      </div>
+
+                      {/* Thumbnail Cover Section */}
+                      <div className="h-48 relative overflow-hidden bg-slate-155">
+                        {course.thumbnail ? (
+                          <img 
+                            src={course.thumbnail} 
+                            alt={course.title} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className={`${course.color || 'bg-[#B932B8]'} w-full h-full flex items-center justify-center relative`}>
+                            <i className={`fas ${course.icon || 'fa-graduation-cap'} text-6xl text-white/20`}></i>
+                          </div>
+                        )}
+                        {!course.thumbnail && (
+                          <div className="absolute bottom-4 left-4 bg-white p-3.5 rounded-2xl shadow-lg border border-slate-100">
+                            <i className={`fas ${course.icon || 'fa-book-open'} text-lg text-slate-950`}></i>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Course Body Contents */}
+                      <div className="p-6 md:p-8 flex-grow flex flex-col justify-between space-y-5">
+                        <div className="space-y-3 text-left">
+                          <div>
+                            <h3 className="text-lg md:text-xl font-black text-slate-950 group-hover:text-[#B932B8] transition-colors line-clamp-1 leading-tight">{course.title}</h3>
+                            <div className="flex items-center space-x-2 mt-1.5">
+                              <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
+                                <i className="fas fa-user-tie text-[10px] text-slate-500"></i>
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-bold">{course.teacher}</p>
+                            </div>
+                          </div>
+
+                          {course.description && (
+                            <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 font-semibold">
+                              {course.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Progress bar simulation & interaction */}
+                        <div className="space-y-2 text-left pt-2 border-t border-slate-100">
+                          <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                            <span className="text-slate-400 tracking-wider">Horumarkaaga</span>
+                            <span className="text-[#B932B8]">0% Dhammaystiran</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#B932B8] to-pink-500 rounded-full transition-all duration-1000" 
+                              style={{ width: `0%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Trigger Learning Overlay */}
+                        <button 
+                          onClick={() => {
+                            setSelectedCourse(course);
+                            setActiveLessonIndex(0);
+                            setIsVideoPlaying(false);
+                            setVideoProgress(0);
+                          }}
+                          className="w-full py-4 rounded-xl bg-slate-900 border border-transparent hover:bg-[#B932B8] text-white font-black text-xs tracking-widest uppercase hover:shadow-[#B932B8]/20 hover:shadow-lg transition-all active:scale-95 duration-100 flex items-center justify-center space-x-2 cursor-pointer"
+                        >
+                          <span>Biloow Barashada</span>
+                          <i className="fas fa-play text-[9px] ml-1"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="col-span-full py-24 text-center bg-white rounded-3xl border border-slate-100">
+                      <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                        <i className="fas fa-book-open text-3xl"></i>
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-800">Ma jiraan koorsooyin hadda diyaarka ah.</h3>
+                      <p className="text-slate-500 mt-2">Maamuluhu wali ma uusan soo gelin casharo cusub.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

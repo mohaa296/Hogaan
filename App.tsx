@@ -431,6 +431,20 @@ const App: React.FC = () => {
             />
           </div>
         );
+      case 'public-chat':
+        return (
+          <div className="max-w-5xl mx-auto py-10 px-4 animate-in fade-in duration-300">
+            <div className="mb-8 text-center md:text-left">
+              <h1 className="text-3xl font-black text-[#10223d]">{language === 'so' ? 'Qolka Wada-hadalka HOGAAN' : 'HOGAAN Public Chatroom'}</h1>
+              <p className="text-slate-500 font-medium text-sm mt-1">{language === 'so' ? 'Wada-hadalka rasmiga ah ee dugsiga HOGAAN - wuxuu u furan yahay ardayda diwaangashan' : 'Official chatroom of HOGAAN online system - open for registered students'}</p>
+            </div>
+            <StudentChat 
+              activeUser={activeStudent ? { id: activeStudent.id, name: activeStudent.fullName, role: 'student' } : null} 
+              onBack={() => setView('landing')}
+              onRegisterRedirect={() => setView('public-register')}
+            />
+          </div>
+        );
       case 'languages':
         return <LanguageManager />;
       default:
