@@ -52,9 +52,19 @@ export interface Student {
   status: StudentStatus;
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'student' | 'admin';
+  text: string;
+  timestamp: string;
+}
+
 export interface AppState {
   students: Student[];
   courses: Course[];
   notifications: AppNotification[];
-  view: 'landing' | 'dashboard' | 'register' | 'list' | 'pending-list' | 'ai-insights' | 'public-register' | 'public-success' | 'courses' | 'student-login' | 'manage-courses';
+  messages?: ChatMessage[];
+  view: 'landing' | 'dashboard' | 'register' | 'list' | 'pending-list' | 'ai-insights' | 'public-register' | 'public-success' | 'courses' | 'student-login' | 'manage-courses' | 'languages' | 'student-chat';
 }

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Student, RegistrationType, StudentStatus, AppNotification } from '../types';
+import { useLanguage } from '../LanguageContext';
 
 interface DashboardProps {
   students: Student[];
@@ -8,6 +9,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
+  const { t } = useLanguage();
   const approvedStudents = students.filter(s => s.status === StudentStatus.APPROVED);
   const pendingCount = students.filter(s => s.status === StudentStatus.PENDING).length;
 
@@ -26,16 +28,16 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
   }, 0);
 
   const stats = [
-    { label: 'Ardayda La Aqbalay', value: approvedStudents.length, icon: 'fa-users', color: 'bg-slate-800' },
-    { label: 'Codsiyada Sugan', value: pendingCount, icon: 'fa-clock', color: 'bg-orange-500' },
+    { label: t('approved_students'), value: approvedStudents.length, icon: 'fa-users', color: 'bg-slate-800' },
+    { label: t('pending_list'), value: pendingCount, icon: 'fa-clock', color: 'bg-orange-500' },
     { 
-      label: 'Dakhliga (USD)', 
+      label: t('currency') === 'Nooca Lacagta' ? 'Dakhliga (USD)' : t('currency') === 'Currency' ? 'Income (USD)' : 'ገቢ (USD)', 
       value: `$${totalUSD.toLocaleString()}`, 
       icon: 'fa-dollar-sign', 
       color: 'bg-emerald-600' 
     },
     { 
-      label: 'Dakhliga (ETB)', 
+      label: t('currency') === 'Nooca Lacagta' ? 'Dakhliga (ETB)' : t('currency') === 'Currency' ? 'Income (ETB)' : 'ገቢ (ETB)', 
       value: `${totalETB.toLocaleString()} Br`, 
       icon: 'fa-money-bill-alt', 
       color: 'bg-blue-600' 
@@ -46,12 +48,24 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Xogta Guud ee HOGAAN</h2>
-          <p className="text-slate-500">Maamul codsiyada oo hubi kobaca waxbarashada.</p>
+          <h2 className="text-2xl font-bold text-slate-800">{t('system_overview')}</h2>
+          <p className="text-slate-500">
+            {t('dashboard') === 'Xogta Guud' 
+              ? 'Maamul codsiyada oo hubi kobaca waxbarashada.' 
+              : t('dashboard') === 'Dashboard' 
+              ? 'Manage applications and track educational growth.' 
+              : 'ማመልከቻዎችን ያስተዳድሩ እና የትምህርት እድገትን ይከታተሉ።'}
+          </p>
         </div>
         <div className="hidden md:flex items-center space-x-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Nidaamka waa Online</span>
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+            {t('dashboard') === 'Xogta Guud' 
+              ? 'Nidaamka waa Online' 
+              : t('dashboard') === 'Dashboard' 
+              ? 'System is Online' 
+              : 'ስርዓቱ በመስመር ላይ ነው'}
+          </span>
         </div>
       </div>
 
@@ -73,8 +87,20 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
         {/* Recent Approved Students */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-lg">Ardaydii u dambaysay (Approved)</h3>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase">Dhawaan</span>
+            <h3 className="font-bold text-lg">
+              {t('dashboard') === 'Xogta Guud' 
+                ? 'Ardaydii u dambaysay (Approved)' 
+                : t('dashboard') === 'Dashboard' 
+                ? 'Recently Approved Students' 
+                : 'በቅርቡ የጸደቁ ተማሪዎች'}
+            </h3>
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase">
+              {t('dashboard') === 'Xogta Guud' 
+                ? 'Dhawaan' 
+                : t('dashboard') === 'Dashboard' 
+                ? 'Recent' 
+                : 'በቅርብ ጊዜ'}
+            </span>
           </div>
           <div className="space-y-4">
             {approvedStudents.slice(-5).reverse().map((s) => (
@@ -87,7 +113,7 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-900">{s.fullName}</p>
-                    <p className="text-xs text-slate-400">{s.country} • {s.registrationType}</p>
+                    <p className="text-xs text-slate-400">{s.country} • {s.registrationType === RegistrationType.PAID ? t('paid') : t('free')}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -99,7 +125,13 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
             {approvedStudents.length === 0 && (
               <div className="text-center py-10">
                 <i className="fas fa-user-clock text-4xl text-slate-200 mb-2"></i>
-                <p className="text-slate-400">Arday wali lama aqbalin.</p>
+                <p className="text-slate-400">
+                  {t('dashboard') === 'Xogta Guud' 
+                    ? 'Arday wali lama aqbalin.' 
+                    : t('dashboard') === 'Dashboard' 
+                    ? 'No approved students yet.' 
+                    : 'እስካሁን የጸደቀ ተማሪ የለም።'}
+                </p>
               </div>
             )}
           </div>
@@ -110,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
           <div className="flex items-center justify-between mb-6 relative z-10">
             <h3 className="font-bold text-lg flex items-center">
               <i className="fas fa-paper-plane mr-2 text-emerald-400"></i>
-              Fariimaha la diray
+              {t('recent_notifications')}
             </h3>
           </div>
           <div className="flex-1 space-y-4 relative z-10 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
@@ -127,7 +159,13 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
             )) : (
               <div className="text-center py-10 opacity-40">
                 <i className="fas fa-comment-slash text-4xl mb-4"></i>
-                <p className="text-sm">Ma jiraan fariimo wali la diray.</p>
+                <p className="text-sm">
+                  {t('dashboard') === 'Xogta Guud' 
+                    ? 'Ma jiraan fariimo wali la diray.' 
+                    : t('dashboard') === 'Dashboard' 
+                    ? 'No messages sent yet.' 
+                    : 'እስካሁን የተላከ መልዕክት የለም።'}
+                </p>
               </div>
             )}
           </div>

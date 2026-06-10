@@ -6,6 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HOGAAN - Nidaamka Diwaangalinta Ardayda</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandPurple: '#B932B8',
+                        brandBlue: '#3084FB',
+                        emerald: {
+                            50: '#faf2fa',
+                            100: '#f5e4f5',
+                            200: '#eebceb',
+                            300: '#e388de',
+                            400: '#d758cf',
+                            500: '#c53ebe',
+                            600: '#B932B8', // Matches requested B932B8 purple
+                            700: '#9e229d',
+                            800: '#821a81',
+                            900: '#6d186c',
+                            950: '#480647'
+                        },
+                        blue: {
+                            50: '#f0f5ff',
+                            100: '#def0ff',
+                            200: '#b7dcff',
+                            300: '#7bc0ff',
+                            400: '#389eff',
+                            500: '#3084FB', // Matches requested 3084FB blue
+                            600: '#1b6adb',
+                            700: '#1254be',
+                            800: '#15459b',
+                            900: '#173c7c',
+                            950: '#0e244d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -24,8 +62,10 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>

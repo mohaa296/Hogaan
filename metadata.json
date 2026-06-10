@@ -1,5 +1,8 @@
 {
   "name": "HOGAAN",
   "description": "A comprehensive student registration and management platform designed for educational institutions to streamline admissions and data tracking.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
