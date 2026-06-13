@@ -8,6 +8,14 @@ const COURSES_FILE = path.join(process.cwd(), "courses.json");
 const STUDENTS_FILE = path.join(process.cwd(), "students.json");
 const NOTIFS_FILE = path.join(process.cwd(), "notifications.json");
 const CHATS_FILE = path.join(process.cwd(), "chats.json");
+const VERSION_FILE = path.join(process.cwd(), "version.json");
+const SERVER_STARTUP_TIMESTAMP = Date.now().toString();
+
+const defaultVersion = {
+  version: "1.0.0",
+  updatedAt: new Date().toLocaleDateString("so-SO"),
+  msg: "Nidaamka cusub ee HOGAAN ayaa diyaar ah! / New update is available now."
+};
 
 const defaultChats = [
   {
@@ -30,6 +38,7 @@ const defaultCourses = [
     icon: "fa-video",
     color: "bg-pink-500",
     level: "Bilow (Level 1)",
+    thumbnail: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80",
     createdAt: "10/06/2026"
   },
   {
@@ -40,6 +49,7 @@ const defaultCourses = [
     icon: "fa-palette",
     color: "bg-purple-500",
     level: "Bilow (Level 1)",
+    thumbnail: "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=800&q=80",
     createdAt: "10/06/2026"
   },
   {
@@ -50,6 +60,7 @@ const defaultCourses = [
     icon: "fa-laptop-code",
     color: "bg-blue-500",
     level: "Bilow (Level 1)",
+    thumbnail: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
     createdAt: "10/06/2026"
   },
   {
@@ -60,6 +71,7 @@ const defaultCourses = [
     icon: "fa-bullhorn",
     color: "bg-orange-500",
     level: "Bilow (Level 1)",
+    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
     createdAt: "10/06/2026"
   }
 ];
@@ -112,6 +124,11 @@ async function startServer() {
   // Seed default chats if file doesn't exist
   if (!fs.existsSync(CHATS_FILE)) {
     writeJSON(CHATS_FILE, defaultChats);
+  }
+
+  // Seed default version if it doesn't exist
+  if (!fs.existsSync(VERSION_FILE)) {
+    writeJSON(VERSION_FILE, defaultVersion);
   }
 
   // API For Chats (Wada-hadalka)
@@ -285,6 +302,29 @@ async function startServer() {
       console.error("Gemini Error:", error);
       res.status(500).json({ error: "Falanqaynta xogta waa ay guuldaraysatay: " + (error?.message || error) });
     }
+  });
+
+  // API 9: Fetch current server version and session Info
+  app.get("/api/version", (req, res) => {
+    const ver = readJSON(VERSION_FILE, defaultVersion);
+    res.json({
+      ...ver,
+      sessionStart: SERVER_STARTUP_TIMESTAMP
+    });
+  });
+
+  // API 10: Admin trigger update broadcast
+  app.post("/api/version", (req, res) => {
+    const { version, msg } = req.body;
+    const currentVer = {
+      version: version || "1.0.1",
+      updatedAt: new Date().toLocaleDateString("so-SO"),
+      msg: msg || "Nidaamka cusub ee HOGAAN ayaa diyaar ah! / New update is available now."
+    };
+    writeJSON(VERSION_FILE, currentVer);
+    // Broadcast the update event to all active clients connected via SSE
+    broadcast("site_updated", currentVer);
+    res.json({ success: true, ...currentVer });
   });
 
   // Vite middleware for development or fallback static files for production

@@ -2,6 +2,203 @@ import React, { useState } from 'react';
 import { useLanguage } from '../LanguageContext';
 import heroHandshakeImg from '../src/assets/images/corporate_handshake_team_1781102049797.png';
 import { Course } from '../types';
+import { motion } from 'motion/react';
+
+const slideUpVariant = {
+  hidden: { opacity: 0, y: 35 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.6, ease: "easeOut" } 
+  }
+};
+
+const zoomUpVariant = {
+  hidden: { opacity: 0, scale: 0.9, y: 25 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } 
+  }
+};
+
+const getCourseArticleData = (courseId: string, courseTitle: string, desc: string, language: string) => {
+  const isSo = language === 'so';
+  const isEn = language === 'en';
+
+  // Fallbacks
+  const fallback = {
+    title: courseTitle,
+    subtitle: isSo ? "Barashada xirfaddaan muhiimka ah" : isEn ? "Mastering this essential modern skill" : "ይህንን አስፈላጊ ችሎታ ማስተር",
+    intro: desc || (isSo ? "Mustaqbalkaaga ku dhis koorsada barashada rasmiga ah ee HOGAAN." : "Build your future with official learning courses from HOGAAN."),
+    aboutTitle: isSo ? "Sharaxaada Maqaalka Koorsada" : isEn ? "Course Article & Information" : "የኮርስ ማብራሪያ መጣጥፍ",
+    aboutBody: isSo 
+      ? `Koorsadan ${courseTitle} waxaa loogu talagalay in lagu siiyo xirfado aad u sarreeya oo wax ku ool ah. Waxaad ku baran doontaa casharro la taaban karo oo isugu jira aragti iyo ficil si aad ugu guuleysato mustaqbalka dhow.`
+      : `This course, ${courseTitle}, is carefully designed to provide you with high-level, practical skills. You will study hands-on lessons blending theory and practice to ensure your career success.`,
+    syllabusTitle: isSo ? "Manhajka & Cutubyada" : isEn ? "Curriculum & Syllabus Modules" : "ሲላበስ እና ምዕራፎች",
+    modules: [
+      { t: isSo ? "Bilowgii Hore & Aasaaska" : "Foundations & Basics", d: isSo ? "Fahamka aasaasiga ah iyo qalabka la isticmaalo" : "Understanding basic structures and tools" },
+      { t: isSo ? "Heerka Dhexe & Casharada" : "Intermediate Practice", d: isSo ? "Mawaadiicda muhiimka ah iyo mashaariicda yaryar" : "Core topics and real-world micro-projects" },
+      { t: isSo ? "Heerka Sare & Portfolio" : "Advanced Mastery & Portfolio", d: isSo ? "Dhisidda mashaariic waawayn iyo hubinta shaqada" : "Building complex files and validating works" }
+    ],
+    outcomesTitle: isSo ? "Maxaad ka faa'iidi doontaa?" : "What you will achieve",
+    outcomes: [
+      isSo ? "Xirfad heer caalami ah oo la aqoonsan yahay" : "Globally recognized modern skillset",
+      isSo ? "Shahaado rasmi ah markaad dhameysato" : "Official digital certificate of assignment",
+      isSo ? "Mashaariic u gaar ah portfolio-gaaga" : "Hands-on projects to showcase on portfolio",
+      isSo ? "Gargaar dhanka shaqo raadinta ah" : "Job placement resources & freelance support"
+    ],
+    quickFacts: {
+      duration: "8 Weeks (Toddobaad)",
+      level: "Beginner - Advanced",
+      hours: "100+ Hours",
+      languageName: isSo ? "Somali & English" : "English / Local"
+    }
+  };
+
+  if (courseId === 'c-video-editing' || courseId === 'p-video-editing') {
+    return {
+      title: isSo ? "Tifaftirka & Habaynta Muuqaalada (Video Editing)" : "Professional Video Editing Masterclass",
+      subtitle: isSo ? "U beddel sawirada iyo clips-ka sheekooyin cajaa'ib ah" : "Transform raw clips into cinematic blockbusters",
+      intro: isSo 
+        ? "Muuqaalku waa aaladda ugu xooggan ee ay maanta shirkadaha iyo shakhsiyaadka caanka ah u isticmaalaan suuqgeynta iyo madadaalada. Koorsadan waxay fure u tahay inaad noqoto xirfadle sare."
+        : "Video content dominates global media. This detailed article explores how learning video editing positions you for highly lucrative creative careers.",
+      aboutTitle: isSo ? "Sharaxaada Maqaalka Koorsada" : "Deep-Dive Course Overview",
+      aboutBody: isSo
+        ? "Ku dhexgal aduunka hal-abuurka! Muqaalku waqtigaan waa aaladda ugu baahida badan. Casharadaan waxaad ku baran doontaa dhammaan siraha badalka, habaynta midabada, saamaynta gaarka ah (VFX), iyo isku-dubaridka codka heerka sare ah. Haddi aad rabto inaad noqoto freelancer madax-bannaan ama aad ka shaqeyso qaybaha warbaahinta, tani waa fursadaada dahabiga ah."
+        : "Unleash your creative potential in high-quality film and video production. Throughout this curriculum, you will master cutting techniques, color correction/grading, visual effects (VFX) implementations, audio enhancements, and advanced motion graphics to command top dollar in the freelance and corporate market.",
+      syllabusTitle: isSo ? "Qaybaha Manhajka Cutubyada" : "Syllabus Breakdown",
+      modules: [
+        { t: isSo ? "1. Horudhaca Adobe Premiere Pro" : "1. Introduction to Premiere Pro", d: isSo ? "Barashada interface-ka, goynta iyo habaynta timeline-ka" : "Working with the workspace, sequence presets, and basic cuts" },
+        { t: isSo ? "2. Tafatidka Codka & Sound Design" : "2. Audio Engineering & Effects", d: isSo ? "Sifaynta codka, isku-xirka muusikada iyo muujinta dareenada" : "Noise reduction, equalizer configs, sound mixing, and sound design principles" },
+        { t: isSo ? "3. Midabaynta Pro (Color Grading)" : "3. Cinematic Color Grading", d: isSo ? "Isticmaalka Lumetri Color si loo helo muuqaal shaneemo ah" : "Utilizing Lumetri color workspace, color matching, and LUT implementation" },
+        { t: isSo ? "4. After Effects & VFX" : "4. Motion Graphics & Transitions", d: isSo ? "Barashada animation, keyframes, iyo saamaynta graphic-ga" : "Creating kinetic typography, camera tracking, and custom transitions" },
+        { t: isSo ? "5. Dhisidda Portfolio & Shaqo Helidda" : "5. Freelancing & Career Placement", d: isSo ? "Sidee lacag looga sameeyaa Upwork iyo qaabaynta faylalkaada" : "Formulating a professional showreel and applying to global design agencies" }
+      ],
+      outcomesTitle: isSo ? "Maxaad ku Barandoontaa Koorsadaan?" : "What You Will Achieve",
+      outcomes: [
+        isSo ? "Maamulidda Premiere Pro iyo After Effects" : "Absolute mastery of Premiere Pro & After Effects",
+        isSo ? "Jarista muuqaal qoraaleedka iyo short-clips" : "Editing high-impact marketing videos and social reels",
+        isSo ? "Habaynta iyo badalka midabaynta heer shaneemo" : "Cinematic color matching and custom Lumetri adjustments",
+        isSo ? "Samaynta shaqo xirfadeed (Showreel) si aad codsiyo u gudbiso" : "Creating a stellar personal showreel for remote client pitches"
+      ],
+      quickFacts: {
+        duration: isSo ? "8 Toddobaad" : "8 Weeks of study",
+        level: isSo ? "Bilow ilaa Sare" : "Beginner to Pro",
+        hours: "120 Hours",
+        languageName: isSo ? "Somali / English" : "Somali / English"
+      }
+    };
+  }
+
+  if (courseId === 'c-graphic-design' || courseId === 'p-graphic-design') {
+    return {
+      title: isSo ? "Naqshadaynta Garaafyada (Graphic Design)" : "Advanced Graphic Design Masterclass",
+      subtitle: isSo ? "Abuur aqoonsi muuqaal oo saameyn leh" : "Design brand identities that captivate markets",
+      intro: isSo 
+        ? "Naqshadaynta garaafyadu waxay isku xirtaa fariinta iyo quruxda. Koorsookan wuxuu kuu sahlayaa inaad u shaqayso shirkadaha ugu waaweyn ama aad abuuri karto adeeg kuu gaar ah."
+        : "Graphic design is the silent ambassador of any brand. This article explains how you will transition your graphic and visual design skills into a highly-paid professional role.",
+      aboutTitle: isSo ? "Maqaalka iyo Sharaxaada" : "Deep-Dive Course Overview",
+      aboutBody: isSo
+        ? "Ku baro naqshadaynta xiga-sare ee calaamadaha, boorarka iyo muuqaalada adoo isticmaalaya Photoshop & Illustrator. Koorsadan waxaa loo naqshadeeyay si buuxda si aad ugu dhex milmto dunida naqshadda. Waxaad abuuraysaa sumado (branding), boorar xayeysiis ah, social media templates, iyo noocyo kala duwan oo naqshadaha xaddidan ah."
+        : "This elite curriculum takes you from absolute ground zero to a refined designer. You will acquire core principles of design, typography, brand development, and interface layouts utilizing vector graphics. Harness the unlimited powers of Photoshop, Illustrator, and Figma to build real commercial assignments.",
+      syllabusTitle: isSo ? "Qaybaha Manhajka Cutubyada" : "Syllabus Breakdown",
+      modules: [
+        { t: isSo ? "1. Aasaasiga iyo Shuruucda Naqshadaynta" : "1. Design Theory & Composition", d: isSo ? "Fahamka miisaanka midabka, typography iyo visual hierarchy" : "Mastering the rules of alignment, colors, hierarchy, and grid systems" },
+        { t: isSo ? "2. Adobe Photoshop Mastering" : "2. Editing & Manipulation in Photoshop", d: isSo ? "Habaynta, jarista iyo is-beddelka sawirada heer sare" : "Working with masks, layers, non-destructive editing, and photo manipulation" },
+        { t: isSo ? "3. Adobe Illustrator & Vector Art" : "3. Logo Design & Vector Graphics", d: isSo ? "Naqshadaynta logo-yada rasmiga ah iyo sawir gacmeedada digital-ka ah" : "Mastering the pen tool, typography layouts, pathfinders, and branding guides" },
+        { t: isSo ? "4. UI/UX iyo Naqshadaynta Figma" : "4. Modern User Interface Design", d: isSo ? "Dhisidda screen-ada abka iyo shabakadaha" : "Wireframing, high-fidelity UI prototypes, and user experience basics in Figma" },
+        { t: isSo ? "5. Portfolio & Suuqa Shaqada" : "5. Brand Portfolio & Freelance", d: isSo ? "Bandhiga shaqooyinka ugu muhiimsan si aad u hesho mushaar sare" : "Compiling assignments into Behance and establishing client funnels" }
+      ],
+      outcomesTitle: isSo ? "Maxaad ku Barandoontaa Koorsadaan?" : "What You Will Achieve",
+      outcomes: [
+        isSo ? "Faham buuxa oo ku saabsan aasaaska midabada iyo visual-ka" : "Complete functional knowledge of graphic theory",
+        isSo ? "Xirfado sare oo Photoshop, Illustrator iyo Figma" : "Expertise inside Photoshop, Illustrator & Figma",
+        isSo ? "Kartida abuurista Brand Identity buuxda oo shirkadeed" : "Ability to develop comprehensive brand identity guidelines",
+        isSo ? "Dhisidda portfolio soo jiidasho leh oo Behance ah" : "An exceptional, client-winning Behance showcase portfolio"
+      ],
+      quickFacts: {
+        duration: isSo ? "10 Toddobaad" : "10 Weeks total",
+        level: isSo ? "Bilow ilaa Sare" : "Beginner to Intermediate",
+        hours: "150 Hours",
+        languageName: isSo ? "Somali / English" : "Somali / English"
+      }
+    };
+  }
+
+  if (courseId === 'c-web-dev' || courseId === 'p-web-dev') {
+    return {
+      title: isSo ? "Dhisidda Mareegaha Webka (Web Development)" : "Full-Stack Web Development Mastery",
+      subtitle: isSo ? "Baro barmaamijyada ugu casrisan HTML, CSS, React iyo Node.js" : "Build modern, responsive full-stack applications",
+      intro: isSo 
+        ? "Tiknoolajiyadu waa mashiinka dhaqaajinaya dunida. Koorsadan waxay fure u tahay inaad noqoto injineer dhisa shabakado casri ah oo dunida laga isticmaalo."
+        : "Software is eating the world. This extensive curriculum guides you on how to program from scratch to build stable full-stack web platforms.",
+      aboutTitle: isSo ? "Warbixinta iyo Maqaalka Koorsada" : "Course Curriculum Deep-Dive",
+      aboutBody: isSo
+        ? "Mareegu waa xarunta ganacsiga digital-ka ah. Halkan waxaad ku baran doontaa sida loo dhiso mareego qurux badan oo responsive ah. casharadu waxay ka bilaabanayaan min aasaaska HTML5, CSS3 iyo JavaScript-ga runta ah, waxaadna u gudbi doontaa React JS (oo ah maktabadda webka ee Facebook hoggaamiso) iyo abuurista API-yada dambe adoo adeegsanaya Node.js iyo database."
+        : "Web technology is the foundation of digital businesses. This intensive article describes how you will build clean full-stack assets. Starting with solid HTML5 semantics, layout patterns with Tailwind CSS, progressive programming with JavaScript ES6, interactive states in React, server management with Node.js and Express, and persistent database storage.",
+      syllabusTitle: isSo ? "Qaybaha Manhajka Cutubyada" : "Syllabus Breakdown",
+      modules: [
+        { t: isSo ? "1. Luuqadaha Aasaasiga ah (HTML & CSS)" : "1. HTML, CSS & Modern Tailwind", d: isSo ? "Dhisidda qaab-dhismeedka iyo bilicda bog kasta oo web ah" : "Semantic markup, modern layout methods (Flexbox/Grid), and Tailwind CSS" },
+        { t: isSo ? "2. JS Barnaamijaynta (JavaScript ES6)" : "2. Algorithmic JavaScript (ES6+)", d: isSo ? "Xakamaynta logic-ga bogga, arrays, functions, iyo falgalka macaamiisha" : "Core JS variables, array functions, manipulation of DOM, and asynchronous calls" },
+        { t: isSo ? "3. React Framework & State" : "3. Frontend Architectures with React", d: isSo ? "Dhisidda qaybo isku xiran (Components) oo modular ah iyo React hooks" : "Single Page Applications, reusable interactive components, states, and hooks" },
+        { t: isSo ? "4. Backend Server & APIs (Node/Express)" : "4. Server Engineering & REST APIs", d: isSo ? "Abuurista APIs, qaabeynta marinnada internet-ka iyo is-weydaarsiga xogta" : "Express server architectures, routing paradigms, middleware, and request handling" },
+        { t: isSo ? "5. Databases & Cloud Deployment" : "5. Database Integrations & Cloud Access", d: isSo ? "Kaydinta xogta ardayda ama isticmaalayaasha iyo ku sii deynta internet-ka" : "Constructing dynamic persistent tables, hosting in Vercel/Render, and final reviews" }
+      ],
+      outcomesTitle: isSo ? "Maxaad ku Barandoontaa Koorsadaan?" : "What You Will Achieve",
+      outcomes: [
+        isSo ? "Aqoonta dhabta ah ee luuqadaha React, JS, iyo CSS" : "Proficient coding capability in React, JavaScript, and CSS",
+        isSo ? "Dhisidda shabakado interactive ah oo isku-xidhan" : "Designing highly interactive and responsive web systems",
+        isSo ? "Abuurista servers iyo APIs si xog loo gudbiyo" : "Deploying stable backend servers and restful endpoints",
+        isSo ? "Ku daabicidda mashaariicdaada baraha cloud-ka" : "Publishing working live projects directly to modern cloud providers"
+      ],
+      quickFacts: {
+        duration: isSo ? "12 Toddobaad" : "12 Weeks total",
+        level: isSo ? "Bilow ilaa Sare" : "Beginner to Advanced",
+        hours: "200 Hours",
+        languageName: isSo ? "Somali / English" : "Somali / English"
+      }
+    };
+  }
+
+  if (courseId === 'c-digital-marketing' || courseId === 'p-digital-marketing') {
+    return {
+      title: isSo ? "Suuq-geynta Baraha Bulshada (Digital Marketing)" : "Modern Digital Marketing Strategy",
+      subtitle: isSo ? "Sida ganacsi loo gaarsiiyo malaayiin macaamiil ah" : "Grow businesses exponentially using modern channels",
+      intro: isSo 
+        ? "Suuqgeyntu waa wadnaha ganacsi kasta. Adduunka maanta shaqooyinka laguma iibin karo suuqyada caadiga ah keliya, faahfaahintan waxay ku tusi doontaa sida loo sameeyo campaigns guulaysta."
+        : "Without marketing, no business survives. Expand your range by implementing data-driven digital marketing tracks specified in this detailed article.",
+      aboutTitle: isSo ? "Sharaxaada iyo Maqaalka Koorsada" : "Comprehensive Course Study",
+      aboutBody: isSo
+        ? "Barashada xayeysiisyada digital-ka ah waa midda maanta ugu faa'iidada basin ah. Casharadaan waxaad ku baran doontaa dhamaan siraha baraha bulshada sida Facebook, Instagram, iyo TikTok, sidoo kale sida loo isticmaalo Google Ads iyo farsamooyinka raadinta ee SEO (Search Engine Optimization) si ganacsi kasta loo gaarsiiyo malaayiin macaamiil ah."
+        : "Transition your skills into a multi-channel growth engine. Acquire deep-level strategies for Social Media Marketing (SMM), Search Engine Optimization (SEO), Pay-Per-Click advertising networks like Meta Ads and Google Ads. Learn how to draft converting copywriter copies, track engagement through Google Analytics, and structure funnels that maximize conversion rates.",
+      syllabusTitle: isSo ? "Qaybaha Manhajka Cutubyada" : "Syllabus Breakdown",
+      modules: [
+        { t: isSo ? "1. Qorshaha iyo Istaraatiijiyadda Guud" : "1. Introduction to Digital Strategy", d: isSo ? "Fahamka dhageystayaasha, falanqaynta tartamayaasha iyo abuurista funnel-ka" : "Target personas, behavioral analysis, and structural copywriting" },
+        { t: isSo ? "2. Adobe Spark & Suuragalnimada Content-ka" : "2. Social Media Organic Growth", d: isSo ? "Samaynta qorshayaal maalinle ah oo leh sawirro heer sare ah iyadoo la isticmaalayo Canva" : "Creating viral organic posts, content calendars, and Canva design sets" },
+        { t: isSo ? "3. Meta Business Suite & Xayeysiinta Paid-ka" : "3. Paid Traffic & Ads Optimization", d: isSo ? "Bilowga Meta Ads, doorashada bartilmaameedka (targeting) iyo miisaaniyada" : "Targeting demographics on Facebook/Instagram, testing creative variations, and calculating ROI" },
+        { t: isSo ? "4. SEO & Google Ads" : "4. Google Ads & SEO Essentials", d: isSo ? "Dhisidda ereyada muhiimka ah (keywords) iyo kor u qaadista sumadda" : "Search marketing campaigns, SEO metadata on websites, and keyword lists" },
+        { t: isSo ? "5. Falanqaynta Xogta (Analytics)" : "5. Web Analytics & Tracking", d: isSo ? "Fahamka Google Analytics si loo go'aamiyo dhibcaha u baahan hagaajinta" : "Deploying pixels, tracking bounce rates, and creating marketing reports" }
+      ],
+      outcomesTitle: isSo ? "Maxaad ku Barandoontaa Koorsadaan?" : "What You Will Achieve",
+      outcomes: [
+        isSo ? "Awoodda maareynta ololayaal xayeysiis kasta oo baraha bulshada ah" : "Ability to manage, scope, and target Meta business ads",
+        isSo ? "Sameynta qoraalo suuq-geyn ah oo wax gada (Copywriting)" : "Drafting compelling copy that triggers user actions",
+        isSo ? "Maqaalka iyo barashada falanqaynta Google Ads" : "Optimizing ad spending to minimize cost per acquisition",
+        isSo ? "Kor u qaadista meheradaha maxaliga ah ee Jigjiga iyo agagaarka" : "Formulating comprehensive marketing campaign scopes for businesses"
+      ],
+      quickFacts: {
+        duration: isSo ? "8 Toddobaad" : "8 Weeks of study",
+        level: isSo ? "All Levels Welcome" : "All levels welcome",
+        hours: "90 Hours",
+        languageName: isSo ? "Somali / English" : "Somali / English"
+      }
+    };
+  }
+
+  return fallback;
+};
 
 interface LandingPageProps {
   onSelectView: (view: 'public-register' | 'dashboard' | 'student-login') => void;
@@ -14,6 +211,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
   const [searchLocation, setSearchLocation] = useState('jigjiga');
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+  React.useEffect(() => {
+    if (courses.length > 0 && !selectedCourse) {
+      setSelectedCourse(courses[0]);
+    }
+  }, [courses, selectedCourse]);
+
+  const handleCourseClick = (course: Course) => {
+    setSelectedCourse(course);
+    setTimeout(() => {
+      const el = document.getElementById('course-article-view');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +332,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
           
           {/* Left Column: Title & Search Filter System */}
-          <div className="lg:col-span-7 space-y-8 text-left">
+          <motion.div 
+            className="lg:col-span-7 space-y-8 text-left"
+            variants={slideUpVariant}
+            initial="hidden"
+            animate="visible"
+          >
             <div className="inline-flex items-center space-x-2 bg-[#B932B8]/20 border border-[#B932B8]/30 rounded-full px-4 py-1.5 text-[#B932B8] font-bold text-xs animate-pulse">
               <i className="fas fa-graduation-cap"></i>
               <span>{language === 'so' ? 'Mustaqbalkaaga Halkan Ka Biloow' : language === 'en' ? 'Start Your Future Right Here' : 'የወደፊት ሕይወትዎን እዚህ ይጀምሩ'}</span>
@@ -187,10 +406,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Column: Beautiful translucent overlay stats glass badges with no giant solid backing block to preserve the backdrop student visibility fully */}
-          <div className="lg:col-span-5 relative w-full h-[540px] hidden lg:flex items-center justify-center">
+          <motion.div 
+            className="lg:col-span-5 relative w-full h-[540px] hidden lg:flex items-center justify-center"
+            variants={zoomUpVariant}
+            initial="hidden"
+            animate="visible"
+          >
             
             {/* Elegant outline display focus ring */}
             <div className="absolute inset-0 rounded-[40px] border border-white/5 bg-white/5 backdrop-blur-[2px] pointer-events-none p-8 flex items-center justify-center">
@@ -239,7 +463,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
               </div>
             </div>
 
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -264,11 +488,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
         </div>
 
         {/* Bento/Categorization Grid (Replicating category tiles in layout mockup) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <motion.div 
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.08
+              }
+            }
+          }}
+        >
           {categories.map((cat, index) => (
-            <button
+            <motion.button
               key={cat.id}
               onClick={() => onSelectView('public-register')}
+              variants={zoomUpVariant}
               className="group bg-white p-6 rounded-3xl border border-slate-200/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center"
             >
               <div className="w-16 h-16 bg-slate-50 text-slate-700 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-[#3084FB] group-hover:text-white transition-all duration-300 group-hover:scale-110">
@@ -278,9 +517,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
               <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-500 uppercase tracking-widest">
                 {cat.count} {language === 'so' ? 'Koorso' : language === 'en' ? 'Programs' : 'ትምህርቶች'}
               </p>
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* SECTION 3: FEATURED PROGRAMS SECTION (Featured Job Offers Layout) */}
@@ -305,11 +544,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {courses.map((course) => {
             const hasThumbnail = !!course.thumbnail;
+            const isSelected = selectedCourse?.id === course.id;
             return (
               <div 
                 key={course.id}
-                className="bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between text-left relative overflow-hidden"
+                onClick={() => handleCourseClick(course)}
+                className={`group bg-white rounded-3xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between text-left relative overflow-hidden cursor-pointer ${
+                  isSelected 
+                    ? 'ring-4 ring-[#B932B8]/30 border-[#B932B8] scale-[1.01]' 
+                    : 'border-slate-200/60'
+                }`}
               >
+                {/* Active selection ribbon */}
+                {isSelected && (
+                  <div className="absolute top-4 right-4 bg-[#B932B8] text-white text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest z-10 shadow-sm animate-pulse">
+                    {language === 'so' ? 'Waa Laguu Doortay' : language === 'en' ? 'Viewing Article' : 'አሁን እያዩት ነው'}
+                  </div>
+                )}
+
                 {/* Colored side indicator */}
                 <div className={`absolute top-0 left-0 w-1.5 h-full ${course.color || 'bg-[#B932B8]'}`}></div>
 
@@ -320,7 +572,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
                       <img 
                         src={course.thumbnail} 
                         alt={course.title} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
                       />
                       <span className="absolute top-3 left-3 bg-black/40 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest">
@@ -359,13 +611,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
 
                 {/* Bottom control row */}
                 <div className="mx-6 mb-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400">
-                    <i className="far fa-calendar-alt mr-1"></i>
-                    {course.createdAt || "June 18, 2026"}
+                  <span className="text-[10px] font-bold text-slate-400 flex items-center space-x-1.5 hover:text-[#B932B8] transition-colors">
+                    <i className="fas fa-book-open text-[11px] text-[#B932B8]"></i>
+                    <span className="underline decoration-[#B932B8]/40 decoration-2 underline-offset-4 font-black uppercase tracking-wider text-[9px]">
+                      {language === 'so' ? 'Aqri Maqaalka' : language === 'en' ? 'Read Article' : 'መጣጥፍ አንብብ'}
+                    </span>
                   </span>
 
                   <button
-                    onClick={() => onSelectView('public-register')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectView('public-register');
+                    }}
                     className="px-4 py-2 bg-gradient-to-r from-[#B932B8] to-[#a120a0] text-white rounded-xl text-xs font-black transition-all flex items-center space-x-1 hover:shadow-md hover:brightness-105 active:scale-95 duration-100"
                   >
                     <span>{language === 'so' ? 'Diiwaangali' : language === 'en' ? 'Register' : 'ይመዝገቡ'}</span>
@@ -378,6 +635,221 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectView, courses }) => {
           })}
         </div>
       </section>
+
+      {/* SECTION 3.5: DETAILED COURSE ARTICLE SECTION WITH ORDER NOW */}
+      {selectedCourse && (() => {
+        const article = getCourseArticleData(selectedCourse.id, selectedCourse.title, selectedCourse.description || '', language);
+        return (
+          <section id="course-article-view" className="py-16 max-w-7xl mx-auto px-4 md:px-8 mt-12 bg-white border border-slate-100/90 rounded-[40px] shadow-sm relative overflow-hidden">
+            {/* Background design accents */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#B932B8]/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-[#3084FB]/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+            <motion.div
+              key={selectedCourse.id}
+              initial="hidden"
+              animate="visible"
+              variants={zoomUpVariant}
+              className="space-y-12 relative z-10"
+            >
+              {/* Top Banner layout */}
+              <div className="border-b border-slate-100 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-black text-[#B932B8] bg-purple-50 px-3 py-1 rounded-full uppercase tracking-widest">
+                      {selectedCourse.level || 'Beginner'}
+                    </span>
+                    <span className="text-[10px] font-black text-[#3084FB] bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
+                      <i className="fas fa-clock"></i> {article.quickFacts.duration}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl md:text-4xl font-black text-slate-950 tracking-tight leading-none">
+                    {article.title}
+                  </h2>
+                  <p className="text-[#B932B8] text-xs font-bold leading-relaxed">
+                    {article.subtitle}
+                  </p>
+                </div>
+
+                {/* Cover representation */}
+                <div className="shrink-0 w-32 h-32 md:w-44 md:h-28 rounded-3xl overflow-hidden shadow-md border border-slate-100 bg-slate-50 relative">
+                  {selectedCourse.thumbnail ? (
+                    <img 
+                      src={selectedCourse.thumbnail} 
+                      alt={selectedCourse.title} 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className={`w-full h-full ${selectedCourse.color || 'bg-gradient-to-r from-purple-500 to-indigo-500'} flex items-center justify-center text-white`}>
+                      <i className={`fas ${selectedCourse.icon || 'fa-graduation-cap'} text-3xl opacity-75`}></i>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3-Column main body grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                
+                {/* Left Columns (8/12) - Article Prose & Curriculum Map */}
+                <div className="lg:col-span-8 space-y-10">
+                  
+                  {/* About article section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <i className="fas fa-file-alt text-[#3084FB]"></i>
+                      {article.aboutTitle}
+                    </h3>
+                    <p className="text-slate-600 text-[13px] leading-relaxed whitespace-pre-line bg-gradient-to-r from-slate-50/50 to-transparent p-5 rounded-2xl border-l-4 border-[#3084FB]">
+                      {article.aboutBody}
+                    </p>
+                  </div>
+
+                  {/* Course Curriculum & Syllabus Modules */}
+                  <div className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                        <i className="fas fa-list-ol text-[#B932B8]"></i>
+                        {article.syllabusTitle}
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        {language === 'so' ? 'Halkan ka dhuux manhajka iyo cutubyada rasmiga ah:' : 'Detailed step-by-step milestones to acquire complete master skill:'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {article.modules.map((mod, idx) => (
+                        <div 
+                          key={idx}
+                          className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100/80 bg-slate-50/30 hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#B932B8] to-[#912090] text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                            0{idx + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-slate-850 text-xs text-slate-900">
+                              {mod.t}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                              {mod.d}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Columns (4/12) - Quick facts & visual icons */}
+                <div className="lg:col-span-4 space-y-6">
+                  
+                  {/* Quick Facts panel */}
+                  <div className="bg-slate-50/80 rounded-3xl p-6 border border-slate-100/90 space-y-6">
+                    <h4 className="text-xs font-black text-slate-800 tracking-wider uppercase">
+                      {language === 'so' ? 'Macluumaad Kooban' : 'Course Overview Facts'}
+                    </h4>
+
+                    <div className="space-y-4">
+                      {/* Fact 1 */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                          <i className="fas fa-calendar-day text-xs"></i>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{language === 'so' ? 'Muddada' : 'Duration'}</p>
+                          <p className="text-xs font-black text-slate-800">{article.quickFacts.duration}</p>
+                        </div>
+                      </div>
+
+                      {/* Fact 2 */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#3084FB] flex items-center justify-center shrink-0">
+                          <i className="fas fa-layer-group text-xs"></i>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{language === 'so' ? 'Heerka' : 'Academic Level'}</p>
+                          <p className="text-xs font-black text-slate-800">{article.quickFacts.level}</p>
+                        </div>
+                      </div>
+
+                      {/* Fact 3 */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+                          <i className="fas fa-hourglass-half text-xs"></i>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{language === 'so' ? 'Saacadaha' : 'Total Hours'}</p>
+                          <p className="text-xs font-black text-slate-800">{article.quickFacts.hours}</p>
+                        </div>
+                      </div>
+
+                      {/* Fact 4 */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-[#B932B8] flex items-center justify-center shrink-0">
+                          <i className="fas fa-comments text-xs"></i>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{language === 'so' ? 'Luuqadda' : 'Instruction'}</p>
+                          <p className="text-xs font-black text-slate-800">{article.quickFacts.languageName}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target Achievements */}
+                  <div className="bg-[#B932B8]/5 rounded-3xl p-6 border border-[#B932B8]/10 space-y-4">
+                    <h4 className="text-xs font-black text-[#B932B8] tracking-wider uppercase">
+                      {article.outcomesTitle}
+                    </h4>
+                    <ul className="space-y-3">
+                      {article.outcomes.map((out, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-655">
+                          <i className="fas fa-check-circle text-emerald-500 shrink-0 mt-0.5 text-[13px]"></i>
+                          <span>{out}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* SECTION BOTTOM: ORDER NOW (DIIWAANGALI HADDA) */}
+              <div className="bg-gradient-to-r from-slate-900 to-slate-950 text-white rounded-[32px] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden mt-6">
+                <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none mix-blend-overlay"></div>
+                <div className="absolute -top-10 -right-10 w-44 h-44 bg-[#B932B8]/20 rounded-full blur-2xl"></div>
+
+                <div className="space-y-2 text-center md:text-left relative z-10 max-w-xl">
+                  <h4 className="text-lg md:text-xl font-black text-white tracking-tight leading-snug">
+                    {language === 'so' 
+                      ? 'Diyaar ma u tahay inaad bilowdo koorsadaan?' 
+                      : language === 'en' 
+                      ? 'Ready to build high-end mastery in this program?'
+                      : 'ይህንን ልዩ ስልጠና ለመጀመር ዝግጁ ነዎት?'}
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {language === 'so'
+                      ? 'Is-diiwaangali maanta si aad u xaqiijiso booskaaga fasalka dambe ama hybrid-ka oo aad u barato manhajka qotada dheer ee aqoonsiga leh.'
+                      : 'Enroll right now to lock in your curriculum resources, secure hybrid sessions, and study with dedicated field experts.'}
+                  </p>
+                </div>
+
+                <div className="shrink-0 relative z-10">
+                  <button
+                    onClick={() => onSelectView('public-register')}
+                    className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-[#B932B8] to-[#e83ce7] text-white hover:from-[#3084FB] hover:to-[#5ca0ff] rounded-2xl text-sm font-black uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg shadow-[#B932B8]/20 hover:shadow-[#3084FB]/20 flex items-center justify-center space-x-2"
+                  >
+                    <i className="fas fa-cart-arrow-down mr-1 animate-bounce"></i>
+                    <span>{language === 'so' ? 'DIIWAANGALI HADDA (ORDER NOW)' : 'REGISTER NOW (ORDER NOW)'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </motion.div>
+          </section>
+        );
+      })()}
 
       {/* SECTION 4: ABOUT ACADEMY PRESTIGE */}
       <section id="about" className="py-12 bg-white rounded-[40px] px-6 border border-slate-100 max-w-7xl mx-auto shadow-sm">

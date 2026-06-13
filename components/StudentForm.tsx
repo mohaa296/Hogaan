@@ -1,6 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Gender, RegistrationType, Student, StudentStatus } from '../types';
+import { motion } from 'motion/react';
+
+const zoomUpVariant = {
+  hidden: { opacity: 0, scale: 0.94, y: 25 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } 
+  }
+};
 
 interface StudentFormProps {
   onAdd: (student: Student) => void;
@@ -117,7 +128,12 @@ const StudentForm: React.FC<StudentFormProps> = ({ onAdd, isPublic = false }) =>
   };
 
   return (
-    <div className={`bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden ${isPublic ? 'max-w-3xl mx-auto my-8' : ''}`}>
+    <motion.div 
+      className={`bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden ${isPublic ? 'max-w-3xl mx-auto my-8' : ''}`}
+      variants={zoomUpVariant}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="bg-emerald-600 p-8 text-white">
         <div className="flex items-center space-x-3 mb-2">
           <div className="bg-white/20 p-2 rounded-lg">
@@ -319,7 +335,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ onAdd, isPublic = false }) =>
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 };
 

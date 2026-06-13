@@ -16,7 +16,9 @@ const StudentChat: React.FC<StudentChatProps> = ({ activeUser, onBack, onRegiste
   
   // Public Verification & Registration state
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [lookupValue, setLookupValue] = useState('');
+  const [lookupValue, setLookupValue] = useState(() => {
+    return localStorage.getItem('hogaan_last_registered_email') || localStorage.getItem('hogaan_last_registered_phone') || '';
+  });
   const [verifiedStudent, setVerifiedStudent] = useState<{ id: string; name: string; role: 'student' } | null>(null);
   const [lookupError, setLookupError] = useState('');
   
@@ -45,6 +47,29 @@ const StudentChat: React.FC<StudentChatProps> = ({ activeUser, onBack, onRegiste
       .then(data => {
         if (Array.isArray(data)) {
           setAllStudents(data);
+
+          // Auto-verify if student has registered previously on this device
+          const lastEmail = localStorage.getItem('hogaan_last_registered_email');
+          const lastPhone = localStorage.getItem('hogaan_last_registered_phone');
+          const savedVerified = localStorage.getItem('hogaan_chat_verified_student');
+
+          if (!savedVerified && !activeUser) {
+            const val = (lastEmail || lastPhone || '').trim().toLowerCase();
+            if (val) {
+              const found = data.find(
+                (s: Student) => s.email.toLowerCase() === val || s.phone.trim().toLowerCase() === val
+              );
+              if (found) {
+                const userObj = {
+                  id: found.id,
+                  name: found.fullName,
+                  role: 'student' as const
+                };
+                setVerifiedStudent(userObj);
+                localStorage.setItem('hogaan_chat_verified_student', JSON.stringify(userObj));
+              }
+            }
+          }
         }
       })
       .catch(err => console.error("Error loading students list:", err));

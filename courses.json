@@ -1,0 +1,46 @@
+[
+  {
+    "id": "c-video-editing",
+    "title": "Video Editing Course",
+    "teacher": "Eng. Hamza Salad",
+    "description": "Baro jar-jaridda iyo habaynta muuqaalada heerka sare ah adoo adeegsanaya Premiere Pro iyo After Effects.",
+    "icon": "fa-video",
+    "color": "bg-pink-500",
+    "level": "Bilow (Level 1)",
+    "thumbnail": "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80",
+    "createdAt": "10/06/2026"
+  },
+  {
+    "id": "c-graphic-design",
+    "title": "Graphic Design Course",
+    "teacher": "Ustaad Zakaria Omar",
+    "description": "Baro naqshadaynta xiga-sare ee calaamadaha, boorarka iyo muuqaalada adoo isticmaalaya Photoshop & Illustrator.",
+    "icon": "fa-palette",
+    "color": "bg-purple-500",
+    "level": "Bilow (Level 1)",
+    "thumbnail": "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=800&q=80",
+    "createdAt": "10/06/2026"
+  },
+  {
+    "id": "c-web-dev",
+    "title": "Web Development Course",
+    "teacher": "Dr. Abdirahman Farah",
+    "description": "Baro dhisidda shabakadaha casriga ah adoo isticmaalaya HTML, CSS, React iyo Node.js.",
+    "icon": "fa-laptop-code",
+    "color": "bg-blue-500",
+    "level": "Bilow (Level 1)",
+    "thumbnail": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
+    "createdAt": "10/06/2026"
+  },
+  {
+    "id": "c-digital-marketing",
+    "title": "Digital Marketing Course",
+    "teacher": "Sahra Mohamed Gure",
+    "description": "Baro xayeysiinta baraha bulshada, SEO, Google Ads iyo kobcinta ganacsiyada digital-ka ah.",
+    "icon": "fa-bullhorn",
+    "color": "bg-orange-500",
+    "level": "Bilow (Level 1)",
+    "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+    "createdAt": "10/06/2026"
+  }
+]

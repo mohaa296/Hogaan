@@ -15,7 +15,7 @@ export const translations: Record<LanguageType, Record<string, string>> = {
     log_out: "Ka Bax",
     admin_user: "Maamulaha",
     main_admin: "Maamulaha Guud",
-    welcome_system: "Ku soo dhawaaw nidaamka casriga ah ee diwaangalinta iyo maamulka ardayda. Hogaami mustaqbalkaaga waxbarasho.",
+    welcome_system: "Goobta wax barashooyinka kala duwan",
     is_diiwaangali: "Is-diiwaangali",
     is_diiwaangali_desc: "Haddii aad tahay arday cusub oo raba inuu ku soo biiro dugsiga, halkan ka buuxi foomka diwaangalinta.",
     biloow_hadda: "Biloow Hadda",

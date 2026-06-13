@@ -1,6 +1,26 @@
 import React, { useState } from 'react';
 import { Student, StudentStatus } from '../types';
 import { useLanguage } from '../LanguageContext';
+import { motion } from 'motion/react';
+
+const slideUpVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
+
+const zoomUpVariant = {
+  hidden: { opacity: 0, scale: 0.94, y: 20 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    y: 0, 
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } 
+  }
+};
 
 interface StudentLoginProps {
   students: Student[];
@@ -16,7 +36,9 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
   onCancel
 }) => {
   const { language, t } = useLanguage();
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(() => {
+    return localStorage.getItem('hogaan_last_registered_email') || '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -60,14 +82,9 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
         return;
       }
 
+      // If student status is pending, allow them to log in directly to avoid friction
       if (student.status === StudentStatus.PENDING) {
-        setError(
-          language === 'so'
-            ? 'Codsigaaga wali wuu socdaa (Pending). Fadlan sug inta uu maamuluhu kaa aqbalayo!'
-            : 'Your student application is currently pending approval. Please wait for official administrative verification.'
-        );
-        setIsLoading(false);
-        return;
+        // Bypassed check to allow login for registered students
       }
 
       if (student.status === StudentStatus.REJECTED) {
@@ -92,6 +109,10 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
       }
 
       setIsLoading(false);
+      localStorage.setItem('hogaan_last_registered_email', student.email);
+      if (student.phone) {
+        localStorage.setItem('hogaan_last_registered_phone', student.phone);
+      }
       onLoginSuccess(student);
     }, 850);
   };
@@ -104,14 +125,12 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
     setTimeout(() => {
       const student = students.find(s => s.email.toLowerCase() === studentEmail.toLowerCase());
       if (student) {
-        if (student.status === StudentStatus.APPROVED) {
+        if (student.status === StudentStatus.APPROVED || student.status === StudentStatus.PENDING) {
+          localStorage.setItem('hogaan_last_registered_email', student.email);
+          if (student.phone) {
+            localStorage.setItem('hogaan_last_registered_phone', student.phone);
+          }
           onLoginSuccess(student);
-        } else if (student.status === StudentStatus.PENDING) {
-          setError(
-            language === 'so'
-              ? `Email-kaan Google (${studentEmail}) waxa uu ku jiraa nidaamka ee heerkiisu waa la-sugid (Pending).`
-              : `Google Account (${studentEmail}) corresponds to a pending student registration.`
-          );
         } else {
           setError(
             language === 'so'
@@ -138,7 +157,12 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-300/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-blue-300/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
 
-      <div className="max-w-md w-full bg-white rounded-[32px] border border-slate-200/80 shadow-2xl p-8 md:p-10 space-y-8 relative animate-in zoom-in-95 duration-200">
+      <motion.div 
+        className="max-w-md w-full bg-white rounded-[32px] border border-slate-200/80 shadow-2xl p-8 md:p-10 space-y-8 relative"
+        variants={zoomUpVariant}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Back Button */}
         <button
           onClick={onCancel}
@@ -301,7 +325,7 @@ const StudentLogin: React.FC<StudentLoginProps> = ({
             </button>
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Popover Card simulating Google Account Chooser */}
       {showGoogleModal && (

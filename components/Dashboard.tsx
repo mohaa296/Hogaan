@@ -10,6 +10,36 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
   const { t } = useLanguage();
+  const [updateMessage, setUpdateMessage] = React.useState('');
+  const [updating, setUpdating] = React.useState(false);
+  const [updateSuccess, setUpdateSuccess] = React.useState(false);
+
+  const triggerSiteUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateMessage.trim()) return;
+    setUpdating(true);
+    setUpdateSuccess(false);
+    try {
+      const res = await fetch("/api/version", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version: "1.0." + Math.floor(Date.now() / 1000).toString().slice(-4),
+          msg: updateMessage.trim()
+        })
+      });
+      if (res.ok) {
+        setUpdateSuccess(true);
+        setUpdateMessage('');
+        setTimeout(() => setUpdateSuccess(false), 4000);
+      }
+    } catch (err) {
+      console.error("Error triggering version update:", err);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const approvedStudents = students.filter(s => s.status === StudentStatus.APPROVED);
   const pendingCount = students.filter(s => s.status === StudentStatus.PENDING).length;
 
@@ -171,6 +201,71 @@ const Dashboard: React.FC<DashboardProps> = ({ students, notifications }) => {
           </div>
           <i className="fas fa-satellite absolute -bottom-4 -right-4 text-9xl text-white/5 -rotate-12"></i>
         </div>
+      </div>
+
+      {/* Admin Site Updates Broadcasting Control Panel */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-[#B932B8]/10 text-[#B932B8] flex items-center justify-center shrink-0">
+            <i className="fas fa-bullhorn text-md"></i>
+          </div>
+          <div>
+            <h3 className="font-extrabold text-[#111827] text-sm">
+              {t('dashboard') === 'Xogta Guud' ? 'Siideynta Ogeysiis / Cusbooneysiin Mareegta' : 'Broadcast Live Site Update Alert'}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {t('dashboard') === 'Xogta Guud' 
+                ? 'Isticmaal qaybtaan si aad dadka isticmaalaya mareegta hadda ugu dirto ogeysiis toos ah oo ah "New update is available now".' 
+                : 'Send real-time "New update is available now" pop-ups to every active web browser.'}
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={triggerSiteUpdate} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <div className="md:col-span-9">
+            <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-2">
+              {t('dashboard') === 'Xogta Guud' ? 'Fariinta Ogeysiiska' : 'Broadcast Message'}
+            </label>
+            <input
+              type="text"
+              required
+              value={updateMessage}
+              onChange={(e) => setUpdateMessage(e.target.value)}
+              placeholder={t('dashboard') === 'Xogta Guud' ? 'Tusaale: Waxaan ku darnay casharo cusub! Fadlan cusbooneysii.' : 'Example: New update is available now! Beautiful new layouts published.'}
+              className="w-full text-xs px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B932B8]/20 focus:border-[#B932B8] text-slate-850"
+            />
+          </div>
+          <div className="md:col-span-3">
+            <button
+              type="submit"
+              disabled={updating || !updateMessage.trim()}
+              className="w-full px-4 py-3 bg-[#B932B8] hover:bg-[#a1209f] disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              {updating ? (
+                <>
+                  <i className="fas fa-spinner animate-spin"></i>
+                  <span>In process...</span>
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-paper-plane"></i>
+                  <span>{t('dashboard') === 'Xogta Guud' ? 'Siideey Hadda' : 'Publish Update'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {updateSuccess && (
+          <div className="p-3 bg-emerald-50 text-emerald-850 border border-emerald-100 rounded-xl text-xs font-bold flex items-center space-x-2 animate-pulse">
+            <i className="fas fa-check-circle text-emerald-500 text-sm"></i>
+            <span>
+              {t('dashboard') === 'Xogta Guud' 
+                ? 'Ogeysiiska cusbooneysiinta waa la siiyey dhammaan ardayda iyo booqdayaasha!' 
+                : 'Site update alert broadcasted successfully to all online devices!'}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

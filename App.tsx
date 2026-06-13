@@ -27,12 +27,46 @@ const App: React.FC = () => {
   });
 
   const [toasts, setToasts] = useState<AppNotification[]>([]);
-  const [activeStudent, setActiveStudent] = useState<Student | null>(null);
+  const [updateNotification, setUpdateNotification] = useState<{ version: string; msg: string; updatedAt?: string } | null>(null);
+  const [initialVersionInfo, setInitialVersionInfo] = useState<{ version: string; sessionStart: string } | null>(null);
+
+  const [activeStudent, setActiveStudent] = useState<Student | null>(() => {
+    const saved = localStorage.getItem('hogaan_active_student');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [lastRegisteredStudent, setLastRegisteredStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    if (activeStudent) {
+      localStorage.setItem('hogaan_active_student', JSON.stringify(activeStudent));
+    } else {
+      localStorage.removeItem('hogaan_active_student');
+    }
+  }, [activeStudent]);
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
+    // Fetch initial version info to detect changes during the session
+    fetch("/api/version")
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setInitialVersionInfo({
+            version: data.version,
+            sessionStart: data.sessionStart
+          });
+        }
+      })
+      .catch(err => console.error("Error loading version on mount:", err));
+
     const savedStudents = localStorage.getItem('hogaan_students');
     const savedNotifs = localStorage.getItem('hogaan_notifications');
     const savedCourses = localStorage.getItem('hogaan_courses');
@@ -90,6 +124,15 @@ const App: React.FC = () => {
       try {
         const payload = JSON.parse(event.data);
         console.log("Real-time update received:", payload);
+
+        if (payload.type === "site_updated") {
+          const updateData = payload.data;
+          setUpdateNotification({
+            version: updateData.version,
+            msg: updateData.msg || "Cusbooneysiin cusub ayaa diyaar ah! / New update is available now.",
+            updatedAt: updateData.updatedAt
+          });
+        }
 
         if (payload.type === "course_added") {
           const newCourse: Course = payload.data;
@@ -173,6 +216,31 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Periodically check for website modifications / server restarts
+  useEffect(() => {
+    if (!initialVersionInfo) return;
+
+    const pollInterval = setInterval(() => {
+      fetch("/api/version")
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            // Check if server started a new session (rebuild/restart) or version was manually bumped
+            if (data.version !== initialVersionInfo.version || data.sessionStart !== initialVersionInfo.sessionStart) {
+              setUpdateNotification({
+                version: data.version,
+                msg: data.msg || "Cusbooneysiin cusub ayaa diyaar ah! / New update is available now.",
+                updatedAt: data.updatedAt
+              });
+            }
+          }
+        })
+        .catch(err => console.debug("Quiet checking for updates:", err));
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [initialVersionInfo]);
+
   useEffect(() => {
     if (state.students.length > 0) {
       localStorage.setItem('hogaan_students', JSON.stringify(state.students));
@@ -199,6 +267,10 @@ const App: React.FC = () => {
     .then(realStudent => {
       if (isPublicMode) {
         setLastRegisteredStudent(realStudent);
+        localStorage.setItem('hogaan_last_registered_email', realStudent.email);
+        if (realStudent.phone) {
+          localStorage.setItem('hogaan_last_registered_phone', realStudent.phone);
+        }
       }
       setState(prev => ({
         ...prev,
@@ -210,6 +282,10 @@ const App: React.FC = () => {
       console.error("Error saving student to api:", err);
       if (isPublicMode) {
         setLastRegisteredStudent(studentWithStatus);
+        localStorage.setItem('hogaan_last_registered_email', studentWithStatus.email);
+        if (studentWithStatus.phone) {
+          localStorage.setItem('hogaan_last_registered_phone', studentWithStatus.phone);
+        }
       }
       setState(prev => ({
         ...prev,
@@ -456,112 +532,202 @@ const App: React.FC = () => {
 
   if (!isAdminView) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar 
-          currentView={state.view} 
-          onSelectView={(v) => {
-            if (v === 'landing') {
-              setView('landing');
-            } else {
-              setView(v as any);
-            }
-          }} 
-          onScrollToSection={(sectionId) => {
-            if (state.view !== 'landing') {
-              setState(prev => ({ ...prev, view: 'landing' }));
-              setTimeout(() => {
+      <>
+        {updateNotification && (
+          <div className="fixed top-0 left-0 right-0 z-[100000] p-4 bg-slate-900 border-b border-[#B932B8]/40 shadow-2xl animate-in slide-in-from-top duration-500">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <div className="relative flex h-3 w-3 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B932B8] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#B932B8]"></span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#B932B8]/20 flex items-center justify-center shrink-0 text-[#B932B8]">
+                  <i className="fas fa-redo animate-spin text-base"></i>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-[#B932B8] text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                      NEW UPDATE AVAILABLE {updateNotification.version}
+                    </span>
+                    <p className="text-xs font-bold text-slate-300">
+                      Cusbooneysiin cusub ayaa ku dhacday website-ka!
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-white mt-1">
+                    "{updateNotification.msg}"
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 w-full md:w-auto shrink-0">
+                <button 
+                  onClick={() => setUpdateNotification(null)} 
+                  className="flex-1 md:flex-initial px-4 py-2 border border-slate-700 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+                >
+                  Xir (Dismiss)
+                </button>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="flex-1 md:flex-initial px-6 py-2.5 bg-[#B932B8] hover:bg-[#a1209f] text-white font-black text-xs rounded-xl transition-all shadow-lg cursor-pointer animate-pulse flex items-center justify-center space-x-2"
+                >
+                  <i className="fas fa-sync-alt"></i>
+                  <span>CUSBOONEYSII (REFRESH)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="min-h-screen bg-slate-50 flex flex-col relative">
+          <Navbar 
+            currentView={state.view} 
+            onSelectView={(v) => {
+              if (v === 'landing') {
+                setView('landing');
+              } else {
+                setView(v as any);
+              }
+            }} 
+            onScrollToSection={(sectionId) => {
+              if (state.view !== 'landing') {
+                setState(prev => ({ ...prev, view: 'landing' }));
+                setTimeout(() => {
+                  const element = document.getElementById(sectionId);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 150);
+              } else {
                 const element = document.getElementById(sectionId);
                 if (element) {
                   element.scrollIntoView({ behavior: 'smooth' });
                 }
-              }, 150);
-            } else {
-              const element = document.getElementById(sectionId);
-              if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
               }
-            }
-          }}
-          activeStudent={activeStudent}
-          onLogout={() => {
-            setActiveStudent(null);
-            setView('landing');
-          }}
-        />
-        <div className="flex-grow">
-          {renderView()}
+            }}
+            activeStudent={activeStudent}
+            onLogout={() => {
+              setActiveStudent(null);
+              setView('landing');
+            }}
+          />
+          <div className="flex-grow">
+            {renderView()}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 relative overflow-hidden">
-      <div className="fixed top-6 right-6 z-[9999] flex flex-col space-y-4 max-w-sm w-full">
-        {toasts.map(toast => (
-          <div key={toast.id} className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-l-4 border-[#B932B8] flex items-start space-x-4 animate-in slide-in-from-right-full duration-300">
-            <div className="bg-[#B932B8]/20 p-2 rounded-lg">
-              <i className="fas fa-paper-plane text-[#B932B8]"></i>
+    <>
+      {updateNotification && (
+        <div className="fixed top-0 left-0 right-0 z-[100000] p-4 bg-slate-900 border-b border-[#B932B8]/40 shadow-2xl animate-in slide-in-from-top duration-500">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B932B8] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#B932B8]"></span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-[#B932B8]/20 flex items-center justify-center shrink-0 text-[#B932B8]">
+                <i className="fas fa-redo animate-spin text-base"></i>
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="bg-[#B932B8] text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                    NEW UPDATE AVAILABLE {updateNotification.version}
+                  </span>
+                  <p className="text-xs font-bold text-slate-300">
+                    Cusbooneysiin cusub ayaa ku dhacday website-ka!
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-white mt-1">
+                  "{updateNotification.msg}"
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[#B932B8] uppercase tracking-wider">Fariin la diray!</p>
-              <p className="text-xs text-slate-300 leading-relaxed mt-1">{toast.message}</p>
+            <div className="flex items-center space-x-3 w-full md:w-auto shrink-0">
+              <button 
+                onClick={() => setUpdateNotification(null)} 
+                className="flex-1 md:flex-initial px-4 py-2 border border-slate-700 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+              >
+                Xir (Dismiss)
+              </button>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="flex-1 md:flex-initial px-6 py-2.5 bg-[#B932B8] hover:bg-[#a1209f] text-white font-black text-xs rounded-xl transition-all shadow-lg cursor-pointer animate-pulse flex items-center justify-center space-x-2"
+              >
+                <i className="fas fa-sync-alt"></i>
+                <span>CUSBOONEYSII (REFRESH)</span>
+              </button>
             </div>
-            <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))} className="text-slate-500 hover:text-white transition-colors">
-              <i className="fas fa-times text-xs"></i>
-            </button>
           </div>
-        ))}
+        </div>
+      )}
+      <div className="flex min-h-screen bg-slate-50 relative overflow-hidden">
+        <div className="fixed top-6 right-6 z-[9999] flex flex-col space-y-4 max-w-sm w-full">
+          {toasts.map(toast => (
+            <div key={toast.id} className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-l-4 border-[#B932B8] flex items-start space-x-4 animate-in slide-in-from-right-full duration-300">
+              <div className="bg-[#B932B8]/20 p-2 rounded-lg">
+                <i className="fas fa-paper-plane text-[#B932B8]"></i>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-[#B932B8] uppercase tracking-wider">Fariin la diray!</p>
+                <p className="text-xs text-slate-300 leading-relaxed mt-1">{toast.message}</p>
+              </div>
+              <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))} className="text-slate-500 hover:text-white transition-colors">
+                <i className="fas fa-times text-xs"></i>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <Sidebar currentView={state.view} setView={setView} students={state.students} />
+        
+        <main className="flex-1 md:ml-64 p-4 md:p-10 transition-all duration-300">
+          <div className="md:hidden flex items-center justify-between mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => setView('landing')} 
+                className="p-2 -ml-2 rounded-lg text-slate-400 hover:text-[#B932B8] hover:bg-slate-50 transition-colors flex items-center justify-center active:scale-95"
+                title={t('back_home')}
+              >
+                <i className="fas fa-arrow-left text-base"></i>
+              </button>
+              <h1 className="text-xl font-bold text-[#B932B8]">HOGAAN</h1>
+            </div>
+            <div className="flex space-x-1 overflow-x-auto pb-1">
+              <button onClick={() => setView('dashboard')} className={`p-2 rounded-lg shrink-0 ${state.view === 'dashboard' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-chart-pie font-bold"></i>
+              </button>
+              <button onClick={() => setView('pending-list')} className={`p-2 rounded-lg shrink-0 relative ${state.view === 'pending-list' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-clock font-bold"></i>
+                {state.students.filter(s => s.status === StudentStatus.PENDING).length > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+              <button onClick={() => setView('manage-courses')} className={`p-2 rounded-lg shrink-0 ${state.view === 'manage-courses' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-layer-group font-bold"></i>
+              </button>
+              <button onClick={() => setView('list')} className={`p-2 rounded-lg shrink-0 ${state.view === 'list' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-users font-bold"></i>
+              </button>
+              <button onClick={() => setView('student-chat')} className={`p-2 rounded-lg shrink-0 ${state.view === 'student-chat' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-comments font-bold"></i>
+              </button>
+              <button onClick={() => setView('languages')} className={`p-2 rounded-lg shrink-0 ${state.view === 'languages' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
+                <i className="fas fa-language font-bold"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {renderView()}
+          </div>
+
+          <footer className="mt-20 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm pb-10">
+            <p>© {new Date().getFullYear()} HOGAAN Student Management System. {t('all_rights_reserved')}</p>
+          </footer>
+        </main>
       </div>
-
-      <Sidebar currentView={state.view} setView={setView} students={state.students} />
-      
-      <main className="flex-1 md:ml-64 p-4 md:p-10 transition-all duration-300">
-        <div className="md:hidden flex items-center justify-between mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setView('landing')} 
-              className="p-2 -ml-2 rounded-lg text-slate-400 hover:text-[#B932B8] hover:bg-slate-50 transition-colors flex items-center justify-center active:scale-90"
-              title={t('back_home')}
-            >
-              <i className="fas fa-arrow-left text-base"></i>
-            </button>
-            <h1 className="text-xl font-bold text-[#B932B8]">HOGAAN</h1>
-          </div>
-          <div className="flex space-x-1 overflow-x-auto pb-1">
-            <button onClick={() => setView('dashboard')} className={`p-2 rounded-lg shrink-0 ${state.view === 'dashboard' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-chart-pie font-bold"></i>
-            </button>
-            <button onClick={() => setView('pending-list')} className={`p-2 rounded-lg shrink-0 relative ${state.view === 'pending-list' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-clock font-bold"></i>
-              {state.students.filter(s => s.status === StudentStatus.PENDING).length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
-            </button>
-            <button onClick={() => setView('manage-courses')} className={`p-2 rounded-lg shrink-0 ${state.view === 'manage-courses' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-layer-group font-bold"></i>
-            </button>
-            <button onClick={() => setView('list')} className={`p-2 rounded-lg shrink-0 ${state.view === 'list' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-users font-bold"></i>
-            </button>
-            <button onClick={() => setView('student-chat')} className={`p-2 rounded-lg shrink-0 ${state.view === 'student-chat' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-comments font-bold"></i>
-            </button>
-            <button onClick={() => setView('languages')} className={`p-2 rounded-lg shrink-0 ${state.view === 'languages' ? 'bg-purple-100/50 text-[#B932B8]' : 'text-slate-400'}`}>
-              <i className="fas fa-language font-bold"></i>
-            </button>
-          </div>
-        </div>
-
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {renderView()}
-        </div>
-
-        <footer className="mt-20 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm pb-10">
-          <p>© {new Date().getFullYear()} HOGAAN Student Management System. {t('all_rights_reserved')}</p>
-        </footer>
-      </main>
-    </div>
+    </>
   );
 };
 
