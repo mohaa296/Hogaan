@@ -29,6 +29,8 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<AppNotification[]>([]);
   const [updateNotification, setUpdateNotification] = useState<{ version: string; msg: string; updatedAt?: string } | null>(null);
   const [initialVersionInfo, setInitialVersionInfo] = useState<{ version: string; sessionStart: string } | null>(null);
+  const [showLaunchAlert, setShowLaunchAlert] = useState<boolean>(false);
+  const [launchAlertData, setLaunchAlertData] = useState<{ version: string; msg: string; updatedAt?: string } | null>(null);
 
   const [activeStudent, setActiveStudent] = useState<Student | null>(() => {
     const saved = localStorage.getItem('hogaan_active_student');
@@ -63,6 +65,16 @@ const App: React.FC = () => {
             version: data.version,
             sessionStart: data.sessionStart
           });
+
+          // Show the update alert when opening the website
+          const lastSeenVer = sessionStorage.getItem("hogaan_last_seen_ver");
+          if (lastSeenVer !== data.version) {
+            setLaunchAlertData({
+              version: data.version,
+              msg: data.msg || "Beautiful new optimized updates are ready on HOGAAN system."
+            });
+            setShowLaunchAlert(true);
+          }
         }
       })
       .catch(err => console.error("Error loading version on mount:", err));
@@ -528,11 +540,71 @@ const App: React.FC = () => {
     }
   };
 
+  const renderLaunchAlertModal = () => {
+    if (!showLaunchAlert || !launchAlertData) return null;
+    return (
+      <div className="fixed inset-0 z-[200005] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl max-w-md w-full overflow-hidden p-6 md:p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-305">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#B932B8] to-[#912090] text-white flex items-center justify-center shadow-lg shadow-[#B932B8]/30 animate-pulse">
+            <i className="fas fa-rocket text-2xl"></i>
+          </div>
+          
+          <div className="space-y-2">
+            <span className="bg-[#B932B8]/10 text-[#B932B8] text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+              System Update • {launchAlertData.version}
+            </span>
+            <h3 className="text-xl md:text-2xl font-black text-slate-950 tracking-tight pt-2">
+              {language === 'so' ? 'CUSBOONEYSIIN CUSUB' : 'LATEST UPDATE IS AVAILABLE'}
+            </h3>
+            <p className="text-sm font-bold text-slate-500 leading-relaxed px-2">
+              {language === 'so' 
+                ? 'Cusbooneysiin cusub oo lagu sameeyay website-ka ayaa diyaar ah hadda! Fadlan guji badanka hoose si aad u hesho adeegyada ugu dambeeyay.' 
+                : 'A brand new up-to-date version of the application is published now! Click the button below to update.'}
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left w-full">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
+              {language === 'so' ? 'Fariinta Isbedelada' : 'Release Notes'}
+            </p>
+            <p className="text-xs font-bold text-slate-650 leading-relaxed italic">
+              "{launchAlertData.msg}"
+            </p>
+          </div>
+
+          <div className="w-full flex flex-col space-y-3 pt-2">
+            <button 
+              onClick={() => {
+                sessionStorage.setItem("hogaan_last_seen_ver", launchAlertData.version);
+                window.location.reload();
+              }}
+              className="w-full py-4 bg-[#B932B8] hover:bg-[#a1209f] text-white text-xs font-black tracking-widest uppercase rounded-2xl shadow-lg shadow-[#B932B8]/20 transition-all flex items-center justify-center space-x-2 active:scale-98 cursor-pointer"
+            >
+              <i className="fas fa-sync-alt animate-spin"></i>
+              <span>{language === 'so' ? 'CUSBOONEYSII HADDA (UPDATE NOW)' : 'UPDATE NOW'}</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                sessionStorage.setItem("hogaan_last_seen_ver", launchAlertData.version);
+                setShowLaunchAlert(false);
+              }}
+              className="w-full py-2.5 bg-transparent text-slate-400 hover:text-slate-650 text-xs font-black tracking-widest uppercase transition-all rounded-xl active:scale-98 cursor-pointer"
+            >
+              {language === 'so' ? 'XIR (DISMISS)' : 'DISMISS'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const isAdminView = ['dashboard', 'register', 'list', 'ai-insights', 'pending-list', 'manage-courses', 'languages', 'student-chat'].includes(state.view);
 
   if (!isAdminView) {
     return (
       <>
+        {renderLaunchAlertModal()}
         {updateNotification && (
           <div className="fixed top-0 left-0 right-0 z-[100000] p-4 bg-slate-900 border-b border-[#B932B8]/40 shadow-2xl animate-in slide-in-from-top duration-500">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -618,6 +690,7 @@ const App: React.FC = () => {
 
   return (
     <>
+      {renderLaunchAlertModal()}
       {updateNotification && (
         <div className="fixed top-0 left-0 right-0 z-[100000] p-4 bg-slate-900 border-b border-[#B932B8]/40 shadow-2xl animate-in slide-in-from-top duration-500">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
